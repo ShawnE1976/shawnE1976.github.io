@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PhenoMap — Global UAP Sighting Map</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- Header -->
+  <header>
+    <div class="header-inner">
+      <div class="logo">
+        <span class="logo-icon">&#9673;</span>
+        <span class="logo-text">PhenoMap</span>
+        <span class="logo-sub">Global UAP Sighting Database</span>
+      </div>
+      <nav>
+        <button class="nav-btn active" id="btn-map" onclick="showPanel('map')">Map</button>
+        <button class="nav-btn" id="btn-list" onclick="showPanel('list')">Sightings</button>
+        <button class="nav-btn" id="btn-submit" onclick="showPanel('submit')">+ Submit</button>
+        <button class="nav-btn" id="btn-about" onclick="showPanel('about')">Gov Data</button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Map Panel -->
+  <div id="panel-map" class="panel active">
+    <div id="map"></div>
+    <div id="map-controls">
+      <div class="filter-bar">
+        <label>Filter by Source:</label>
+        <select id="filter-source" onchange="applyFilters()">
+          <option value="all">All Sources</option>
+          <option value="gov">US Government</option>
+          <option value="military">Military / DoD</option>
+          <option value="civilian">Civilian</option>
+          <option value="aaro">AARO Database</option>
+        </select>
+        <label>Year:</label>
+        <select id="filter-year" onchange="applyFilters()">
+          <option value="all">All Years</option>
+        </select>
+        <label>Has Video:</label>
+        <select id="filter-video" onchange="applyFilters()">
+          <option value="all">Any</option>
+          <option value="yes">Video Only</option>
+        </select>
+        <span id="sighting-count" class="count-badge">0 sightings</span>
+      </div>
+    </div>
+    <div id="legend">
+      <div class="legend-item"><span class="dot dot-gov"></span> US Gov / DoD</div>
+      <div class="legend-item"><span class="dot dot-mil"></span> Military</div>
+      <div class="legend-item"><span class="dot dot-civ"></span> Civilian</div>
+      <div class="legend-item"><span class="dot dot-aaro"></span> AARO</div>
+    </div>
+  </div>
+
+  <!-- Sightings List Panel -->
+  <div id="panel-list" class="panel">
+    <div class="panel-inner">
+      <h2>All Sightings</h2>
+      <input type="text" id="search-input" placeholder="Search location, description..." oninput="renderList()" />
+      <div id="sightings-list"></div>
+    </div>
+  </div>
+
+  <!-- Submit Panel -->
+  <div id="panel-submit" class="panel">
+    <div class="panel-inner">
+      <h2>Submit a Sighting</h2>
+      <p class="subtitle">Help grow the database. All submissions are reviewed before appearing on the map.</p>
+      <form id="submit-form" onsubmit="handleSubmit(event)">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Your Name (optional)</label>
+            <input type="text" id="sub-name" placeholder="Anonymous" />
+          </div>
+          <div class="form-group">
+            <label>Date of Sighting *</label>
+            <input type="date" id="sub-date" required />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Location / City *</label>
+            <input type="text" id="sub-location" placeholder="e.g. Phoenix, AZ" required />
+          </div>
+          <div class="form-group">
+            <label>Country *</label>
+            <input type="text" id="sub-country" placeholder="USA" required />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Latitude (decimal)</label>
+            <input type="number" id="sub-lat" step="0.0001" placeholder="e.g. 33.4484" />
+          </div>
+          <div class="form-group">
+            <label>Longitude (decimal)</label>
+            <input type="number" id="sub-lng" step="0.0001" placeholder="e.g. -112.0740" />
+          </div>
+        </div>
+        <div class="form-group full">
+          <label>Description *</label>
+          <textarea id="sub-desc" rows="4" placeholder="Describe what you saw — shape, color, movement, duration..." required></textarea>
+        </div>
+        <div class="form-group full">
+          <label>Video URL(s)</label>
+          <input type="text" id="sub-video" placeholder="YouTube, Rumble, or direct link — separate multiple with commas" />
+          <small>Accepted: YouTube, Rumble, Vimeo, direct MP4 links</small>
+        </div>
+        <div class="form-group full">
+          <label>Image URL (optional)</label>
+          <input type="text" id="sub-image" placeholder="https://..." />
+        </div>
+        <div class="form-group full">
+          <label>Source / Reference (optional)</label>
+          <input type="text" id="sub-source" placeholder="News article, MUFON case #, etc." />
+        </div>
+        <button type="submit" class="btn-primary">Submit Sighting</button>
+      </form>
+      <div id="submit-success" class="success-msg" style="display:none;">
+        Thank you! Your submission has been recorded. It will appear on the map after review.<br/>
+        <small>Note: In this demo, submissions are stored locally in your browser and displayed immediately on the map.</small>
+      </div>
+    </div>
+  </div>
+
+  <!-- Government Data Panel -->
+  <div id="panel-about" class="panel">
+    <div class="panel-inner">
+      <h2>US Government UAP Data Sources</h2>
+      <p class="subtitle">All government-sourced sightings on this map are drawn from officially released documents and reports.</p>
+
+      <div class="gov-sources">
+        <div class="source-card">
+          <h3>AARO — All-domain Anomaly Resolution Office</h3>
+          <p>Established 2022. Responsible for detecting, identifying, and attributing UAP. Has catalogued hundreds of reports from military personnel. Released Historical Record Reports (2024).</p>
+          <ul>
+            <li>AARO Historical Record Report Vol. 1 &amp; 2 (2024)</li>
+            <li>Ongoing case database (partially declassified)</li>
+          </ul>
+        </div>
+        <div class="source-card">
+          <h3>UAP Task Force / UAPTF (2020–2022)</h3>
+          <p>Pentagon task force that produced the landmark June 2021 "Preliminary Assessment: Unidentified Aerial Phenomena" report covering 144 incidents from 2004–2021.</p>
+        </div>
+        <div class="source-card">
+          <h3>Congressional UAP Hearings (2022–2024)</h3>
+          <p>House and Senate hearings included testimony from military pilots and intelligence officials. Key testimony from Ryan Graves, David Fravor, and David Grusch (2023).</p>
+        </div>
+        <div class="source-card">
+          <h3>Declassified Videos</h3>
+          <p>Three videos officially declassified by the DoD (2020):</p>
+          <ul>
+            <li><strong>FLIR1 / "Tic Tac"</strong> — USS Nimitz, Nov 2004, off San Diego, CA</li>
+            <li><strong>GIMBAL</strong> — 2015, off Florida Atlantic coast</li>
+            <li><strong>GOFAST</strong> — 2015, off Florida Atlantic coast</li>
+          </ul>
+        </div>
+        <div class="source-card">
+          <h3>Project Blue Book (1952–1969)</h3>
+          <p>US Air Force investigation of 12,618 reports. Now fully declassified. 701 cases remain "unidentified." Available via National Archives.</p>
+        </div>
+        <div class="source-card">
+          <h3>NUFORC — National UFO Reporting Center</h3>
+          <p>Civilian database with 170,000+ reports since 1974. Frequently cited in government briefings.</p>
+        </div>
+        <div class="source-card">
+          <h3>FAA Pilot Reports</h3>
+          <p>Pilots file reports through FAA channels. Selected cases have been referenced in AARO and UAPTF reports.</p>
+        </div>
+      </div>
+
+      <h2 style="margin-top:2rem;">Key Incidents in the Database</h2>
+      <p class="subtitle">Notable cases with government documentation.</p>
+      <div id="gov-incidents-list"></div>
+    </div>
+  </div>
+
+  <!-- Gumroad Paywall Overlay -->
+  <div id="paywall-overlay">
+    <div class="paywall-box">
+      <div class="pw-icon">&#9673;</div>
+      <h2>PhenoMap Premium</h2>
+      <p>Access the world's most comprehensive UAP sighting database — including all US government data, declassified videos, AARO reports, and community submissions.</p>
+      <div class="pw-plans">
+        <div class="pw-plan">
+          <h3>Free</h3>
+          <div class="price">$0 <span>/mo</span></div>
+          <ul>
+            <li>Global map view</li>
+            <li>30 key sightings</li>
+            <li>Basic filters</li>
+            <li>Gov data summary</li>
+          </ul>
+          <button class="pw-btn pw-btn-free" onclick="activateFree()">Continue Free</button>
+        </div>
+        <div class="pw-plan featured">
+          <h3>Premium</h3>
+          <div class="price">$4 <span>/mo</span></div>
+          <ul>
+            <li>All sightings + videos</li>
+            <li>Advanced filters</li>
+            <li>Submit sightings</li>
+            <li>AARO full data</li>
+            <li>Download CSV</li>
+            <li>No ads</li>
+          </ul>
+          <button class="pw-btn pw-btn-premium" onclick="openGumroad()">Get Premium</button>
+        </div>
+      </div>
+      <div class="pw-dismiss" onclick="activateFree()">Skip for now — continue with free access</div>
+    </div>
+  </div>
+
+  <!-- Sighting Detail Modal -->
+  <div id="modal-overlay" class="modal-overlay" onclick="closeModal()">
+    <div id="modal" class="modal" onclick="event.stopPropagation()">
+      <button class="modal-close" onclick="closeModal()">&#10005;</button>
+      <div id="modal-content"></div>
+    </div>
+  </div>
+
+  <script src="https://gumroad.com/js/gumroad.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
