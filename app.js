@@ -1,72 +1,88 @@
 // ============================================================
-//  PhenoMap — Application Logic
+//  DockLedger — Application Logic
 // ============================================================
 
 let map;
 let markerCluster;
 let allMarkers = [];
-let userSightings = [];
+let expenses = [];
+let maintLog = [];
+let currentUser = null;
+let currentMaintFilter = 'all';
 
-const SOURCE_COLORS = {
-  gov:      '#f59e0b',
-  mil:      '#ef4444',
-  civilian: '#22c55e',
-  aaro:     '#00d4ff'
+const TYPE_COLORS = {
+  'full-service': '#4fc3f7',
+  'liveaboard':   '#22c55e',
+  'fuel':         '#fb923c',
+  'boatyard':     '#a78bfa',
+  'anchorage':    '#f59e0b'
 };
 
-// ── PAYWALL ───────────────────────────────────────────────────
-const STRIPE_URL = 'https://buy.stripe.com/5kQaEZ5zy4QI4vJaLr83C04';
+// ── LOGIN / AUTH ─────────────────────────────────────────────
 
-let isPremium = false;
-
-function initPaywall() {
-  const token = localStorage.getItem('phenomap_premium');
-  if (token === 'true') {
-    isPremium = true;
-    return;
-  }
-  setTimeout(() => {
-    document.getElementById('paywall-overlay').classList.add('show');
-  }, 1500);
+function handleLogin(e) {
+  e.preventDefault();
+  const username = document.getElementById('login-username').value.trim() || 'Captain';
+  currentUser = username;
+  localStorage.setItem('dockledger_user', username);
+  showApp();
 }
 
-function activateFree() {
-  document.getElementById('paywall-overlay').classList.remove('show');
+function handleLogout() {
+  localStorage.removeItem('dockledger_user');
+  currentUser = null;
+  document.getElementById('app').classList.add('hidden');
+  document.getElementById('login-screen').style.display = '';
 }
 
-function openStripe() {
-  window.open(STRIPE_URL, '_blank', 'noopener,noreferrer');
-}
-
-function activatePremium() {
-  isPremium = true;
-  localStorage.setItem('phenomap_premium', 'true');
-  document.getElementById('paywall-overlay').classList.remove('show');
-  alert('Premium activated! Thank you for supporting PhenoMap.');
+function showApp() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').classList.remove('hidden');
+  document.getElementById('header-username').textContent = currentUser;
+  document.getElementById('dash-username').textContent = currentUser;
+  updateDashboard();
 }
 
 // ── INIT ─────────────────────────────────────────────────────
 
 window.addEventListener('DOMContentLoaded', () => {
-  populateYearFilter();
-  loadUserSightings();
-  initMap();
-  renderList();
-  renderGovIncidents();
-  initPaywall();
+  loadData();
+  setDefaultDates();
+
+  const savedUser = localStorage.getItem('dockledger_user');
+  if (savedUser) {
+    currentUser = savedUser;
+    showApp();
+  }
 });
 
+function setDefaultDates() {
+  const today = new Date().toISOString().split('T')[0];
+  const dateFields = ['expense-date', 'maint-date'];
+  dateFields.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = today;
+  });
+}
+
+// ── MAP ──────────────────────────────────────────────────────
+
+let mapInitialized = false;
+
 function initMap() {
+  if (mapInitialized) return;
+  mapInitialized = true;
+
   map = L.map('map', {
-    center: [25, 5],
-    zoom: 2,
-    minZoom: 2,
+    center: [30, -80],
+    zoom: 5,
+    minZoom: 3,
     maxZoom: 18,
     zoomControl: true,
   });
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
     maxZoom: 19
   }).addTo(map);
 
@@ -76,7 +92,7 @@ function initMap() {
     iconCreateFunction: cluster => {
       const count = cluster.getChildCount();
       return L.divIcon({
-        html: `<div class="cluster-icon">${count}</div>`,
+        html: '<div class="cluster-icon">' + count + '</div>',
         className: '',
         iconSize: [38, 38]
       });
@@ -87,83 +103,76 @@ function initMap() {
   buildMarkers();
 }
 
-// ── MARKERS ──────────────────────────────────────────────────
-
 function buildMarkers() {
   allMarkers = [];
-  markerCluster.clearLayers();
+  if (markerCluster) markerCluster.clearLayers();
 
-  const combined = [...SIGHTINGS, ...userSightings];
-
-  combined.forEach(s => {
-    if (!s.lat || !s.lng) return;
-
-    const color = SOURCE_COLORS[s.source] || '#94a3b8';
+  MARINAS.forEach(m => {
+    const color = TYPE_COLORS[m.type] || '#94a3b8';
     const icon = L.divIcon({
-      html: `<div style="
-        width:14px;height:14px;
-        background:${color};
-        border:2px solid rgba(255,255,255,0.85);
-        border-radius:50%;
-        box-shadow:0 0 8px ${color};
-      "></div>`,
+      html: '<div style="' +
+        'width:14px;height:14px;' +
+        'background:' + color + ';' +
+        'border:2px solid rgba(255,255,255,0.85);' +
+        'border-radius:50%;' +
+        'box-shadow:0 0 8px ' + color + ';' +
+      '"></div>',
       className: '',
       iconSize: [14, 14],
       iconAnchor: [7, 7]
     });
 
-    const marker = L.marker([s.lat, s.lng], { icon });
+    const marker = L.marker([m.lat, m.lng], { icon });
 
-    const shortDesc = s.description.length > 120
-      ? s.description.slice(0, 120) + '…'
-      : s.description;
+    const shortDesc = m.description.length > 100
+      ? m.description.slice(0, 100) + '...'
+      : m.description;
 
-    marker.bindPopup(`
-      <div class="popup-title">${escHtml(s.title)}</div>
-      <div class="popup-date">${formatDate(s.date)} &nbsp;·&nbsp; ${sourceLabel(s.source)}</div>
-      <div class="popup-desc">${escHtml(shortDesc)}</div>
-      <button class="popup-btn" onclick="openModal(${s.id !== undefined ? s.id : '"u' + s.uid + '"'})">
-        View Details ${s.videos && s.videos.length ? '▶' : ''}
-      </button>
-    `, { maxWidth: 280 });
+    const amenityStr = m.amenities.slice(0, 4).join(', ');
 
-    marker._sightingData = s;
+    marker.bindPopup(
+      '<div class="popup-title">' + escHtml(m.name) + '</div>' +
+      '<div class="popup-date">' + escHtml(m.location) + ' &middot; ' + typeLabel(m.type) + '</div>' +
+      '<div class="popup-desc">' + escHtml(shortDesc) + '</div>' +
+      '<div class="popup-amenities">' + escHtml(amenityStr) + '</div>' +
+      '<div class="popup-rate">Slip: ' + escHtml(m.slipRate) + '</div>' +
+      '<button class="popup-btn" onclick="openModal(' + m.id + ')">View Details</button>',
+      { maxWidth: 280 }
+    );
+
+    marker._marinaData = m;
     allMarkers.push(marker);
     markerCluster.addLayer(marker);
   });
 
-  updateCount();
+  updateMarinaCount();
 }
 
 function applyFilters() {
-  const srcFilter  = document.getElementById('filter-source').value;
-  const yearFilter = document.getElementById('filter-year').value;
-  const vidFilter  = document.getElementById('filter-video').value;
+  const typeFilter = document.getElementById('filter-type').value;
+  const regionFilter = document.getElementById('filter-region').value;
 
   markerCluster.clearLayers();
   let visible = 0;
 
   allMarkers.forEach(marker => {
-    const s = marker._sightingData;
-    const year = s.date ? s.date.split('-')[0] : '';
-    const hasVideo = s.videos && s.videos.length > 0;
+    const m = marker._marinaData;
 
-    const srcOk  = srcFilter  === 'all' || s.source === srcFilter;
-    const yearOk = yearFilter === 'all' || year === yearFilter;
-    const vidOk  = vidFilter  === 'all' || (vidFilter === 'yes' && hasVideo);
+    const typeOk = typeFilter === 'all' || m.type === typeFilter ||
+      (typeFilter === 'liveaboard' && m.liveaboard);
+    const regionOk = regionFilter === 'all' || m.region === regionFilter;
 
-    if (srcOk && yearOk && vidOk) {
+    if (typeOk && regionOk) {
       markerCluster.addLayer(marker);
       visible++;
     }
   });
 
-  document.getElementById('sighting-count').textContent = `${visible} sightings`;
+  document.getElementById('marina-count').textContent = visible + ' marinas';
 }
 
-function updateCount() {
-  const total = allMarkers.length;
-  document.getElementById('sighting-count').textContent = `${total} sightings`;
+function updateMarinaCount() {
+  document.getElementById('marina-count').textContent = allMarkers.length + ' marinas';
 }
 
 // ── PANELS ───────────────────────────────────────────────────
@@ -172,231 +181,343 @@ function showPanel(name) {
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
 
-  document.getElementById(`panel-${name}`).classList.add('active');
-  document.getElementById(`btn-${name}`).classList.add('active');
+  document.getElementById('panel-' + name).classList.add('active');
+  document.getElementById('btn-' + name).classList.add('active');
 
   if (name === 'map') {
+    initMap();
     setTimeout(() => map && map.invalidateSize(), 50);
   }
-  if (name === 'list') renderList();
+  if (name === 'dashboard') updateDashboard();
+  if (name === 'expenses') renderExpenses();
+  if (name === 'maintenance') renderMaintenance();
 }
 
-// ── SIGHTINGS LIST ────────────────────────────────────────────
-
-function renderList() {
-  const query = (document.getElementById('search-input')?.value || '').toLowerCase();
-  const combined = [...SIGHTINGS, ...userSightings];
-
-  const filtered = combined.filter(s =>
-    !query ||
-    s.title.toLowerCase().includes(query) ||
-    s.location.toLowerCase().includes(query) ||
-    s.description.toLowerCase().includes(query)
-  );
-
-  const container = document.getElementById('sightings-list');
-  if (!container) return;
-
-  container.innerHTML = filtered.map(s => `
-    <div class="sighting-card" onclick="openModal(${s.id !== undefined ? s.id : '"u' + s.uid + '"'})">
-      <div class="card-header">
-        <span class="card-title">${escHtml(s.title)}</span>
-        <span class="card-date">${formatDate(s.date)}</span>
-      </div>
-      <div class="card-desc">${escHtml(s.location)} — ${escHtml(s.description)}</div>
-      <div class="card-tags">
-        <span class="tag tag-${s.source}">${sourceLabel(s.source)}</span>
-        ${s.videos && s.videos.length ? '<span class="tag tag-video">▶ Video</span>' : ''}
-        ${s.userSubmitted ? '<span class="tag" style="background:rgba(148,163,184,0.15);color:#94a3b8;">User Submitted</span>' : ''}
-      </div>
-    </div>
-  `).join('');
-}
-
-// ── GOV INCIDENTS (About panel) ───────────────────────────────
-
-function renderGovIncidents() {
-  const govList = SIGHTINGS.filter(s => s.source === 'gov' || s.source === 'mil' || s.source === 'aaro');
-  const container = document.getElementById('gov-incidents-list');
-  if (!container) return;
-
-  container.innerHTML = govList.map(s => `
-    <div class="sighting-card" onclick="openModal(${s.id})">
-      <div class="card-header">
-        <span class="card-title">${escHtml(s.title)}</span>
-        <span class="card-date">${formatDate(s.date)}</span>
-      </div>
-      <div class="card-desc"><strong>${escHtml(s.location)}</strong> — ${escHtml(s.gov_ref || '')}</div>
-      <div class="card-tags">
-        <span class="tag tag-${s.source}">${sourceLabel(s.source)}</span>
-        ${s.videos && s.videos.length ? '<span class="tag tag-video">▶ Video</span>' : ''}
-      </div>
-    </div>
-  `).join('');
-}
-
-// ── MODAL ─────────────────────────────────────────────────────
+// ── MARINA MODAL ─────────────────────────────────────────────
 
 function openModal(id) {
-  let s;
-  if (typeof id === 'string' && id.startsWith('u')) {
-    const uid = id.slice(1);
-    s = userSightings.find(x => String(x.uid) === uid);
-  } else {
-    s = [...SIGHTINGS, ...userSightings].find(x => x.id === id);
-  }
-  if (!s) return;
+  const m = MARINAS.find(x => x.id === id);
+  if (!m) return;
 
-  const videoHtml = buildVideoHtml(s.videos || []);
+  const amenityHtml = m.amenities.map(a => '<span class="amenity-chip">' + escHtml(a) + '</span>').join('');
+  const fuelStr = [];
+  if (m.fuel.gas) fuelStr.push('Gas');
+  if (m.fuel.diesel) fuelStr.push('Diesel');
 
-  document.getElementById('modal-content').innerHTML = `
-    <h2>${escHtml(s.title)}</h2>
-    <div class="modal-meta">
-      <span>${formatDate(s.date)}</span>
-      <span>·</span>
-      <span>${escHtml(s.location)}</span>
-      <span>·</span>
-      <span class="tag tag-${s.source}" style="font-size:0.72rem;">${sourceLabel(s.source)}</span>
-      ${s.shape ? `<span>· Shape: ${escHtml(s.shape)}</span>` : ''}
-      ${s.duration ? `<span>· Duration: ${escHtml(s.duration)}</span>` : ''}
-    </div>
-    ${s.witnesses ? `<div style="font-size:0.82rem;color:#94a3b8;margin-bottom:0.75rem;">Witnesses: ${escHtml(s.witnesses)}</div>` : ''}
-    <div class="modal-desc">${escHtml(s.description)}</div>
-    ${videoHtml}
-    ${s.gov_ref ? `<div class="modal-source"><strong>Government Reference:</strong> ${escHtml(s.gov_ref)}</div>` : ''}
-    ${s.userSubmitted && s.submittedBy ? `<div class="modal-source">Submitted by: ${escHtml(s.submittedBy)}</div>` : ''}
-    <div style="margin-top:1rem;">
-      <button class="popup-btn" onclick="flyToOnMap(${s.lat}, ${s.lng})" style="font-size:0.8rem;">
-        📍 Show on Map
-      </button>
-    </div>
-  `;
+  const stars = '&#9733;'.repeat(Math.floor(m.rating)) +
+    (m.rating % 1 >= 0.5 ? '&#9734;' : '');
+
+  document.getElementById('modal-content').innerHTML =
+    '<h2>' + escHtml(m.name) + '</h2>' +
+    '<div class="modal-meta">' +
+      '<span>' + escHtml(m.location) + '</span>' +
+      '<span>&middot;</span>' +
+      '<span class="tag tag-' + m.type + '">' + typeLabel(m.type) + '</span>' +
+      (m.liveaboard ? '<span class="tag tag-liveaboard">Liveaboard OK</span>' : '') +
+    '</div>' +
+    '<div class="modal-rating">' +
+      '<span class="stars">' + stars + '</span>' +
+      '<span>' + m.rating + ' (' + m.reviews + ' reviews)</span>' +
+    '</div>' +
+    '<div class="modal-desc">' + escHtml(m.description) + '</div>' +
+    '<div class="modal-section">' +
+      '<h3>Slip Rate</h3>' +
+      '<p>' + escHtml(m.slipRate) + '</p>' +
+    '</div>' +
+    '<div class="modal-section">' +
+      '<h3>Amenities</h3>' +
+      '<div class="amenity-grid">' + amenityHtml + '</div>' +
+    '</div>' +
+    (fuelStr.length ? '<div class="modal-section"><h3>Fuel</h3><p>' + fuelStr.join(', ') + '</p></div>' : '') +
+    (m.phone ? '<div class="modal-section"><h3>Contact</h3><p>' + escHtml(m.phone) + '</p></div>' : '') +
+    '<div class="modal-actions">' +
+      '<button class="popup-btn" onclick="flyToMarina(' + m.lat + ',' + m.lng + ')">Show on Map</button>' +
+    '</div>';
 
   document.getElementById('modal-overlay').classList.add('open');
-}
-
-function buildVideoHtml(videos) {
-  if (!videos || videos.length === 0) return '';
-
-  const items = videos.map(url => {
-    url = url.trim();
-    const embedUrl = toEmbedUrl(url);
-    if (embedUrl) {
-      return `<iframe class="video-embed" src="${escHtml(embedUrl)}" allowfullscreen loading="lazy"></iframe>`;
-    }
-    return `<a class="video-link" href="${escHtml(url)}" target="_blank" rel="noopener noreferrer">▶ ${escHtml(url)}</a>`;
-  }).join('');
-
-  return `<div class="modal-videos"><h3>Video Evidence</h3>${items}</div>`;
-}
-
-function toEmbedUrl(url) {
-  try {
-    if (url.includes('youtube.com/embed/') || url.includes('player.vimeo.com')) return url;
-    const ytMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([A-Za-z0-9_-]{11})/);
-    if (ytMatch) return `https://www.youtube.com/embed/${ytMatch[1]}`;
-    if (url.includes('rumble.com/embed/')) return url;
-    const vimeoMatch = url.match(/vimeo\.com\/(\d+)/);
-    if (vimeoMatch) return `https://player.vimeo.com/video/${vimeoMatch[1]}`;
-  } catch (e) {}
-  return null;
 }
 
 function closeModal() {
   document.getElementById('modal-overlay').classList.remove('open');
 }
 
-function flyToOnMap(lat, lng) {
+function flyToMarina(lat, lng) {
   closeModal();
   showPanel('map');
   setTimeout(() => {
-    map.flyTo([lat, lng], 7, { duration: 1.2 });
+    map.flyTo([lat, lng], 14, { duration: 1.2 });
   }, 100);
 }
 
-// ── SUBMIT ────────────────────────────────────────────────────
+// ── EXPENSES ─────────────────────────────────────────────────
 
-function handleSubmit(e) {
+function addExpense(e) {
   e.preventDefault();
 
-  const date     = document.getElementById('sub-date').value;
-  const location = document.getElementById('sub-location').value.trim();
-  const country  = document.getElementById('sub-country').value.trim();
-  const lat      = parseFloat(document.getElementById('sub-lat').value) || null;
-  const lng      = parseFloat(document.getElementById('sub-lng').value) || null;
-  const desc     = document.getElementById('sub-desc').value.trim();
-  const videoRaw = document.getElementById('sub-video').value.trim();
-  const image    = document.getElementById('sub-image').value.trim();
-  const source   = document.getElementById('sub-source').value.trim();
-  const name     = document.getElementById('sub-name').value.trim() || 'Anonymous';
-
-  const videos = videoRaw
-    ? videoRaw.split(',').map(v => v.trim()).filter(Boolean)
-    : [];
-
-  const newSighting = {
-    uid: Date.now(),
-    title: `${location}, ${country}`,
-    location: `${location}, ${country}`,
-    lat: lat || geoGuess(location),
-    lng: lng || null,
-    date,
-    source: 'civilian',
-    description: desc,
-    videos,
-    image,
-    gov_ref: source,
-    shape: '',
-    duration: '',
-    witnesses: name,
-    submittedBy: name,
-    userSubmitted: true
+  const expense = {
+    id: Date.now(),
+    amount: parseFloat(document.getElementById('expense-amount').value),
+    category: document.getElementById('expense-category').value,
+    date: document.getElementById('expense-date').value,
+    location: document.getElementById('expense-location').value.trim(),
+    notes: document.getElementById('expense-notes').value.trim()
   };
 
-  userSightings.push(newSighting);
-  saveUserSightings();
-  buildMarkers();
-  renderList();
-
-  document.getElementById('submit-form').reset();
-  document.getElementById('submit-success').style.display = 'block';
-  setTimeout(() => {
-    document.getElementById('submit-success').style.display = 'none';
-  }, 8000);
+  expenses.push(expense);
+  saveData();
+  document.getElementById('expense-form').reset();
+  setDefaultDates();
+  renderExpenses();
+  updateDashboard();
 }
 
-function geoGuess(location) {
-  const lower = location.toLowerCase();
-  const known = {
-    'phoenix': 33.4484, 'new york': 40.7128, 'los angeles': 34.0522,
-    'chicago': 41.8781, 'houston': 29.7604, 'dallas': 32.7767,
-    'miami': 25.7617, 'seattle': 47.6062, 'denver': 39.7392,
-    'atlanta': 33.749, 'las vegas': 36.1699, 'washington': 38.9072
-  };
-  for (const [city, lat] of Object.entries(known)) {
-    if (lower.includes(city)) return lat;
+function deleteExpense(id) {
+  expenses = expenses.filter(e => e.id !== id);
+  saveData();
+  renderExpenses();
+  updateDashboard();
+}
+
+function renderExpenses() {
+  const list = document.getElementById('expense-list');
+  if (!list) return;
+
+  const sorted = [...expenses].sort((a, b) => b.date.localeCompare(a.date));
+
+  if (sorted.length === 0) {
+    list.innerHTML = '<p class="empty-state">No expenses yet. Add your first one above!</p>';
+  } else {
+    list.innerHTML = sorted.map(exp => {
+      const cat = CATEGORY_INFO[exp.category] || CATEGORY_INFO.other;
+      return '<div class="expense-item">' +
+        '<div class="expense-left">' +
+          '<span class="expense-icon">' + cat.icon + '</span>' +
+          '<div class="expense-info">' +
+            '<span class="expense-cat">' + escHtml(cat.label) + '</span>' +
+            '<span class="expense-detail">' +
+              escHtml(exp.notes || exp.location || '') +
+              ' &middot; ' + formatDate(exp.date) +
+            '</span>' +
+          '</div>' +
+        '</div>' +
+        '<div class="expense-right">' +
+          '<span class="expense-amt">$' + exp.amount.toFixed(2) + '</span>' +
+          '<button class="delete-btn" onclick="deleteExpense(' + exp.id + ')" title="Delete">&times;</button>' +
+        '</div>' +
+      '</div>';
+    }).join('');
   }
-  return 0;
+
+  renderBreakdown();
 }
 
-// ── PERSISTENCE ───────────────────────────────────────────────
+function renderBreakdown() {
+  const grid = document.getElementById('breakdown-grid');
+  if (!grid) return;
 
-function saveUserSightings() {
+  const now = new Date();
+  const currentMonth = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+
+  const monthExpenses = expenses.filter(e => e.date.startsWith(currentMonth));
+  const totals = {};
+  let grandTotal = 0;
+
+  monthExpenses.forEach(e => {
+    totals[e.category] = (totals[e.category] || 0) + e.amount;
+    grandTotal += e.amount;
+  });
+
+  if (grandTotal === 0) {
+    grid.innerHTML = '<p class="empty-state">No expenses this month yet.</p>';
+    return;
+  }
+
+  grid.innerHTML = Object.entries(totals)
+    .sort((a, b) => b[1] - a[1])
+    .map(([cat, total]) => {
+      const info = CATEGORY_INFO[cat] || CATEGORY_INFO.other;
+      const pct = ((total / grandTotal) * 100).toFixed(0);
+      return '<div class="breakdown-item">' +
+        '<div class="breakdown-header">' +
+          '<span>' + info.icon + ' ' + info.label + '</span>' +
+          '<span>$' + total.toFixed(2) + '</span>' +
+        '</div>' +
+        '<div class="breakdown-bar">' +
+          '<div class="breakdown-fill" style="width:' + pct + '%;background:' + info.color + '"></div>' +
+        '</div>' +
+      '</div>';
+    }).join('') +
+    '<div class="breakdown-total">Total: $' + grandTotal.toFixed(2) + '</div>';
+}
+
+// ── MAINTENANCE LOG ──────────────────────────────────────────
+
+function addMaintenance(e) {
+  e.preventDefault();
+
+  const entry = {
+    id: Date.now(),
+    title: document.getElementById('maint-title').value.trim(),
+    category: document.getElementById('maint-category').value,
+    date: document.getElementById('maint-date').value,
+    status: document.getElementById('maint-status').value,
+    notes: document.getElementById('maint-notes').value.trim()
+  };
+
+  maintLog.push(entry);
+  saveData();
+  document.getElementById('maint-form').reset();
+  setDefaultDates();
+  renderMaintenance();
+  updateDashboard();
+}
+
+function deleteMaint(id) {
+  maintLog = maintLog.filter(m => m.id !== id);
+  saveData();
+  renderMaintenance();
+  updateDashboard();
+}
+
+function toggleMaintStatus(id) {
+  const entry = maintLog.find(m => m.id === id);
+  if (!entry) return;
+  const cycle = { 'scheduled': 'in-progress', 'in-progress': 'completed', 'completed': 'scheduled' };
+  entry.status = cycle[entry.status] || 'completed';
+  saveData();
+  renderMaintenance();
+  updateDashboard();
+}
+
+function filterMaint(filter, btn) {
+  currentMaintFilter = filter;
+  document.querySelectorAll('.maint-filter').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderMaintenance();
+}
+
+function renderMaintenance() {
+  const list = document.getElementById('maint-list');
+  if (!list) return;
+
+  let filtered = [...maintLog].sort((a, b) => b.date.localeCompare(a.date));
+  if (currentMaintFilter !== 'all') {
+    filtered = filtered.filter(m => m.status === currentMaintFilter);
+  }
+
+  if (filtered.length === 0) {
+    list.innerHTML = '<p class="empty-state">No maintenance entries' +
+      (currentMaintFilter !== 'all' ? ' with status "' + currentMaintFilter + '"' : '') +
+      '.</p>';
+    return;
+  }
+
+  list.innerHTML = filtered.map(entry => {
+    const cat = MAINT_CATEGORY_INFO[entry.category] || MAINT_CATEGORY_INFO.other;
+    const statusClass = 'status-' + entry.status;
+    const statusLabel = entry.status.replace('-', ' ');
+
+    return '<div class="maint-item">' +
+      '<div class="maint-left">' +
+        '<span class="maint-icon">' + cat.icon + '</span>' +
+        '<div class="maint-info">' +
+          '<span class="maint-title">' + escHtml(entry.title) + '</span>' +
+          '<span class="maint-detail">' +
+            escHtml(cat.label) + ' &middot; ' + formatDate(entry.date) +
+          '</span>' +
+          (entry.notes ? '<span class="maint-notes">' + escHtml(entry.notes) + '</span>' : '') +
+        '</div>' +
+      '</div>' +
+      '<div class="maint-right">' +
+        '<span class="maint-status ' + statusClass + '" onclick="toggleMaintStatus(' + entry.id + ')">' +
+          statusLabel +
+        '</span>' +
+        '<button class="delete-btn" onclick="deleteMaint(' + entry.id + ')" title="Delete">&times;</button>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+// ── DASHBOARD ────────────────────────────────────────────────
+
+function updateDashboard() {
+  const now = new Date();
+  const currentMonth = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+  const monthExpenses = expenses.filter(e => e.date.startsWith(currentMonth));
+
+  const slipTotal = monthExpenses.filter(e => e.category === 'slip').reduce((s, e) => s + e.amount, 0);
+  const maintTotal = monthExpenses.filter(e => e.category === 'maintenance' || e.category === 'rigging').reduce((s, e) => s + e.amount, 0);
+  const provTotal = monthExpenses.filter(e => e.category === 'provisioning').reduce((s, e) => s + e.amount, 0);
+  const total = monthExpenses.reduce((s, e) => s + e.amount, 0);
+
+  document.getElementById('stat-slip').textContent = '$' + slipTotal.toFixed(0);
+  document.getElementById('stat-maint').textContent = '$' + maintTotal.toFixed(0);
+  document.getElementById('stat-prov').textContent = '$' + provTotal.toFixed(0);
+  document.getElementById('stat-total').textContent = '$' + total.toFixed(0);
+
+  // Recent expenses
+  const recentEl = document.getElementById('recent-expenses');
+  if (recentEl) {
+    const recent = [...expenses].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5);
+    if (recent.length === 0) {
+      recentEl.innerHTML = '<p class="empty-state">No expenses yet. Start tracking!</p>';
+    } else {
+      recentEl.innerHTML = recent.map(exp => {
+        const cat = CATEGORY_INFO[exp.category] || CATEGORY_INFO.other;
+        return '<div class="recent-item">' +
+          '<span>' + cat.icon + ' ' + escHtml(cat.label) + '</span>' +
+          '<span>$' + exp.amount.toFixed(2) + '</span>' +
+        '</div>';
+      }).join('');
+    }
+  }
+
+  // Upcoming maintenance
+  const upcomingEl = document.getElementById('upcoming-maintenance');
+  if (upcomingEl) {
+    const upcoming = maintLog
+      .filter(m => m.status === 'scheduled' || m.status === 'in-progress')
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .slice(0, 5);
+    if (upcoming.length === 0) {
+      upcomingEl.innerHTML = '<p class="empty-state">No upcoming maintenance.</p>';
+    } else {
+      upcomingEl.innerHTML = upcoming.map(entry => {
+        const cat = MAINT_CATEGORY_INFO[entry.category] || MAINT_CATEGORY_INFO.other;
+        const statusClass = 'status-' + entry.status;
+        return '<div class="recent-item">' +
+          '<span>' + cat.icon + ' ' + escHtml(entry.title) + '</span>' +
+          '<span class="maint-status ' + statusClass + '" style="font-size:0.7rem">' +
+            entry.status.replace('-', ' ') +
+          '</span>' +
+        '</div>';
+      }).join('');
+    }
+  }
+}
+
+// ── PERSISTENCE ──────────────────────────────────────────────
+
+function saveData() {
   try {
-    localStorage.setItem('phenomap_user_sightings', JSON.stringify(userSightings));
+    localStorage.setItem('dockledger_expenses', JSON.stringify(expenses));
+    localStorage.setItem('dockledger_maintenance', JSON.stringify(maintLog));
   } catch (e) {}
 }
 
-function loadUserSightings() {
+function loadData() {
   try {
-    const raw = localStorage.getItem('phenomap_user_sightings');
-    if (raw) userSightings = JSON.parse(raw);
+    const expRaw = localStorage.getItem('dockledger_expenses');
+    if (expRaw) expenses = JSON.parse(expRaw);
+    const maintRaw = localStorage.getItem('dockledger_maintenance');
+    if (maintRaw) maintLog = JSON.parse(maintRaw);
   } catch (e) {
-    userSightings = [];
+    expenses = [];
+    maintLog = [];
   }
 }
 
-// ── HELPERS ───────────────────────────────────────────────────
+// ── HELPERS ──────────────────────────────────────────────────
 
 function escHtml(str) {
   if (!str) return '';
@@ -408,16 +529,21 @@ function escHtml(str) {
 }
 
 function formatDate(dateStr) {
-  if (!dateStr) return 'Date unknown';
+  if (!dateStr) return '';
   try {
     const [y, m, d] = dateStr.split('-');
-    if (!m) return y;
     const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    return `${d ? d + ' ' : ''}${months[parseInt(m,10)-1]} ${y}`;
+    return (d ? d + ' ' : '') + months[parseInt(m, 10) - 1] + ' ' + y;
   } catch (e) { return dateStr; }
 }
 
-function sourceLabel(src) {
-  const labels = { gov:'US Gov', mil:'Military', civilian:'Civilian', aaro:'AARO' };
-  return labels[src] || src;
+function typeLabel(type) {
+  const labels = {
+    'full-service': 'Full Service',
+    'liveaboard': 'Liveaboard',
+    'fuel': 'Fuel Dock',
+    'boatyard': 'Boatyard',
+    'anchorage': 'Anchorage'
+  };
+  return labels[type] || type;
 }
