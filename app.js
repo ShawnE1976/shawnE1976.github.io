@@ -15,8 +15,7 @@ const SOURCE_COLORS = {
 };
 
 // ── PAYWALL ───────────────────────────────────────────────────
-// Replace YOUR_GUMROAD_PRODUCT_URL with your actual Gumroad link
-const GUMROAD_URL = 'https://gumroad.com/l/phenomap-premium';
+const GUMROAD_URL = 'https://shawnsmith27.gumroad.com/l/ykpinc';
 
 let isPremium = false;
 
