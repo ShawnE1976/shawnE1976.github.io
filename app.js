@@ -15,18 +15,16 @@ const SOURCE_COLORS = {
 };
 
 // ── PAYWALL ───────────────────────────────────────────────────
-const GUMROAD_URL = 'https://shawnsmith27.gumroad.com/l/ykpinc';
+const STRIPE_URL = 'https://buy.stripe.com/5kQaEZ5zy4QI4vJaLr83C04';
 
 let isPremium = false;
 
 function initPaywall() {
-  // Check if user already unlocked (stored in localStorage)
   const token = localStorage.getItem('phenomap_premium');
   if (token === 'true') {
     isPremium = true;
     return;
   }
-  // Show paywall after 1.5s
   setTimeout(() => {
     document.getElementById('paywall-overlay').classList.add('show');
   }, 1500);
@@ -36,16 +34,10 @@ function activateFree() {
   document.getElementById('paywall-overlay').classList.remove('show');
 }
 
-function openGumroad() {
-  // Opens Gumroad overlay widget if script loaded, else fallback to new tab
-  if (window.GumroadOverlay) {
-    window.GumroadOverlay.show(GUMROAD_URL);
-  } else {
-    window.open(GUMROAD_URL, '_blank', 'noopener,noreferrer');
-  }
+function openStripe() {
+  window.open(STRIPE_URL, '_blank', 'noopener,noreferrer');
 }
 
-// Call this after Gumroad purchase confirmation
 function activatePremium() {
   isPremium = true;
   localStorage.setItem('phenomap_premium', 'true');
@@ -300,14 +292,10 @@ function buildVideoHtml(videos) {
 
 function toEmbedUrl(url) {
   try {
-    // Already embed format
     if (url.includes('youtube.com/embed/') || url.includes('player.vimeo.com')) return url;
-    // YouTube watch
     const ytMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([A-Za-z0-9_-]{11})/);
     if (ytMatch) return `https://www.youtube.com/embed/${ytMatch[1]}`;
-    // Rumble embed
     if (url.includes('rumble.com/embed/')) return url;
-    // Vimeo
     const vimeoMatch = url.match(/vimeo\.com\/(\d+)/);
     if (vimeoMatch) return `https://player.vimeo.com/video/${vimeoMatch[1]}`;
   } catch (e) {}
@@ -377,7 +365,6 @@ function handleSubmit(e) {
   }, 8000);
 }
 
-// Rough lat/lng guesses for common US cities (fallback)
 function geoGuess(location) {
   const lower = location.toLowerCase();
   const known = {
