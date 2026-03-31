@@ -3,68 +3,47 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>DockLedger — Liveaboard Marina Companion</title>
-  <meta name="description" content="Find liveaboard-friendly marinas, track expenses, log maintenance. The all-in-one app for life on the water." />
+  <title>PhenoMap — Global UAP Intelligence Platform</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
   <link rel="stylesheet" href="style.css" />
-  <link rel="manifest" href="manifest.json" />
-  <meta name="theme-color" content="#0b1120" />
 </head>
 <body>
-
-<!-- ── LOGIN SCREEN ──────────────────────────────────────────── -->
-<div id="login-screen" class="login-screen">
-  <div class="login-box">
-    <div class="login-logo">⚓</div>
-    <h1>DockLedger</h1>
-    <p class="login-tagline">Liveaboard Marina Companion</p>
-    <form id="login-form" onsubmit="handleLogin(event)">
-      <input type="text" id="login-email" placeholder="Email" required />
-      <input type="password" id="login-pass" placeholder="Password" required />
-      <button type="submit" class="btn-primary">Set Sail</button>
-    </form>
-    <p class="login-footer">Track your marina life</p>
-  </div>
-</div>
 
 <!-- ── SIDEBAR ────────────────────────────────────────────── -->
 <aside id="sidebar">
   <div class="sidebar-logo">
-    <span class="logo-icon">⚓</span>
+    <span class="logo-pulse"></span>
     <div>
-      <div class="logo-name">DockLedger</div>
-      <div class="logo-tag">Liveaboard Companion</div>
+      <div class="logo-name">PhenoMap</div>
+      <div class="logo-tag">UAP Intelligence Platform</div>
     </div>
   </div>
 
   <div class="sidebar-stats">
-    <div class="stat-pill"><span id="sb-expenses">$0</span><small>Total Spent</small></div>
-    <div class="stat-pill"><span id="sb-tasks">0</span><small>Pending Tasks</small></div>
-    <div class="stat-pill"><span id="sb-completed">0</span><small>Completed</small></div>
-    <div class="stat-pill"><span id="sb-marinas">0</span><small>Saved Marinas</small></div>
+    <div class="stat-pill"><span id="sb-total">0</span><small>Sightings</small></div>
+    <div class="stat-pill"><span id="sb-verified">0</span><small>Verified</small></div>
+    <div class="stat-pill"><span id="sb-countries">0</span><small>Countries</small></div>
+    <div class="stat-pill"><span id="sb-month">0</span><small>This Month</small></div>
   </div>
 
   <nav class="sidebar-nav">
     <div class="nav-section-label">Navigation</div>
     <button class="snav active" data-panel="map" onclick="showPanel('map',this)">
-      <span class="snav-icon">🗺</span> Marina Map
+      <span class="snav-icon">🗺</span> Global Map
     </button>
-    <button class="snav" data-panel="expenses" onclick="showPanel('expenses',this)">
-      <span class="snav-icon">💰</span> Expenses
+    <button class="snav" data-panel="sightings" onclick="showPanel('sightings',this)">
+      <span class="snav-icon">👁</span> Sightings
     </button>
-    <button class="snav" data-panel="maintenance" onclick="showPanel('maintenance',this)">
-      <span class="snav-icon">🔧</span> Maintenance
+    <button class="snav" data-panel="report" onclick="showPanel('report',this)">
+      <span class="snav-icon">＋</span> Report Sighting
     </button>
     <button class="snav" data-panel="analytics" onclick="showPanel('analytics',this)">
       <span class="snav-icon">📊</span> Analytics
     </button>
-    <button class="snav" data-panel="checklists" onclick="showPanel('checklists',this)">
-      <span class="snav-icon">✓</span> Checklists
-    </button>
-    <button class="snav" data-panel="fuel" onclick="showPanel('fuel',this)">
-      <span class="snav-icon">⛽</span> Fuel Calc
+    <button class="snav" data-panel="govdata" onclick="showPanel('govdata',this)">
+      <span class="snav-icon">🏛</span> Gov Data
     </button>
 
     <div class="nav-section-label" style="margin-top:1.5rem;">Account</div>
@@ -79,7 +58,7 @@
   <div class="sidebar-footer">
     <div class="alert-banner" id="alert-banner" style="display:none;">
       <span class="alert-dot"></span>
-      <span id="alert-text">New marina found!</span>
+      <span id="alert-text">New sighting near you</span>
     </div>
   </div>
 </aside>
@@ -87,7 +66,7 @@
 <!-- ── MOBILE TOP BAR ─────────────────────────────────────── -->
 <div id="mobile-bar">
   <button id="burger" onclick="toggleSidebar()">☰</button>
-  <span class="mobile-logo">⚓ DockLedger</span>
+  <span class="mobile-logo">PhenoMap</span>
   <button class="mobile-premium" onclick="showPaywall()">⭐ Pro</button>
 </div>
 
@@ -100,126 +79,185 @@
 
     <div id="map-toolbar">
       <div class="toolbar-group">
-        <select id="filter-price" onchange="applyFilters()" title="Price Range">
-          <option value="all">All Prices</option>
-          <option value="affordable">< $350/mo</option>
-          <option value="moderate">$350-500/mo</option>
-          <option value="premium">> $500/mo</option>
+        <select id="filter-source" onchange="applyFilters()" title="Filter by source">
+          <option value="all">All Sources</option>
+          <option value="gov">US Government</option>
+          <option value="mil">Military / DoD</option>
+          <option value="aaro">AARO</option>
+          <option value="civilian">Civilian</option>
         </select>
-        <select id="filter-liveaboard" onchange="applyFilters()" title="Liveaboard">
-          <option value="all">All Marinas</option>
-          <option value="yes">Liveaboard OK</option>
+        <select id="filter-shape" onchange="applyFilters()" title="Filter by shape">
+          <option value="all">All Shapes</option>
+          <option value="disc">Disc / Saucer</option>
+          <option value="triangle">Triangle</option>
+          <option value="sphere">Sphere / Orb</option>
+          <option value="cylinder">Cylinder</option>
+          <option value="other">Other</option>
+        </select>
+        <select id="filter-year" onchange="applyFilters()" title="Filter by year">
+          <option value="all">All Years</option>
+        </select>
+        <select id="filter-status" onchange="applyFilters()" title="Filter by status">
+          <option value="all">All Status</option>
+          <option value="verified">Verified</option>
+          <option value="pending">Pending</option>
+        </select>
+        <select id="filter-video" onchange="applyFilters()" title="Video evidence">
+          <option value="all">Any</option>
+          <option value="yes">Has Video</option>
         </select>
       </div>
       <div class="toolbar-group">
-        <span id="marina-count" class="count-badge">25 marinas</span>
+        <span id="sighting-count" class="count-badge">0 sightings</span>
+        <button class="tool-btn" onclick="toggleHeatmap()" id="btn-heat" title="Toggle heatmap">🔥</button>
         <button class="tool-btn" onclick="locateMe()" title="My location">📍</button>
-        <button class="tool-btn" onclick="map.setView([30,-85],4)" title="Reset view">🌍</button>
+        <button class="tool-btn" onclick="map.setView([25,5],2)" title="Reset view">🌍</button>
       </div>
+    </div>
+
+    <div id="timeline-bar">
+      <label>Timeline: <span id="timeline-year-label">All</span></label>
+      <input type="range" id="timeline-slider" min="0" max="100" value="100" oninput="onTimelineChange(this.value)" />
     </div>
 
     <div id="legend">
-      <div class="legend-item"><span class="dot dot-affordable"></span>Affordable</div>
-      <div class="legend-item"><span class="dot dot-moderate"></span>Moderate</div>
-      <div class="legend-item"><span class="dot dot-premium"></span>Premium</div>
+      <div class="legend-item"><span class="dot dot-gov"></span>US Gov</div>
+      <div class="legend-item"><span class="dot dot-mil"></span>Military</div>
+      <div class="legend-item"><span class="dot dot-civ"></span>Civilian</div>
+      <div class="legend-item"><span class="dot dot-aaro"></span>AARO</div>
     </div>
   </div>
 
-  <!-- EXPENSES -->
-  <div id="panel-expenses" class="panel">
+  <!-- SIGHTINGS LIST -->
+  <div id="panel-sightings" class="panel">
     <div class="panel-inner">
       <div class="panel-header">
-        <h1>Expense Tracker</h1>
-        <p>Track all your marina-related expenses</p>
+        <h1>Sighting Reports</h1>
+        <p>Browse and filter all reported UAP sightings from around the world</p>
       </div>
       <div class="list-toolbar">
-        <select id="expense-category-filter" onchange="renderExpensesList()">
-          <option value="all">All Categories</option>
+        <input type="text" id="search-input" placeholder="Search by title, location, or description..." oninput="renderSightingsList()" />
+        <select id="list-shape" onchange="renderSightingsList()">
+          <option value="all">All Shapes</option>
+          <option value="disc">Disc</option>
+          <option value="triangle">Triangle</option>
+          <option value="sphere">Sphere</option>
         </select>
-        <button class="btn-primary" onclick="showExpenseForm()">+ Add Expense</button>
+        <select id="list-status" onchange="renderSightingsList()">
+          <option value="all">All Status</option>
+          <option value="verified">Verified</option>
+          <option value="pending">Pending</option>
+        </select>
       </div>
-      <div id="expense-form" class="form-panel" style="display:none;">
-        <form onsubmit="handleExpenseSubmit(event)">
-          <div class="form-row">
-            <div class="form-group">
-              <label>Amount *</label>
-              <input type="number" id="expense-amount" step="0.01" placeholder="0.00" required />
-            </div>
-            <div class="form-group">
-              <label>Category *</label>
-              <select id="expense-category" required></select>
-            </div>
+      <div id="sightings-list"></div>
+    </div>
+  </div>
+
+  <!-- REPORT SIGHTING -->
+  <div id="panel-report" class="panel">
+    <div class="panel-inner">
+      <div class="panel-header">
+        <h1>Report a Sighting</h1>
+        <p>Share your UAP/UFO encounter with the global community. All reports are reviewed before verification.</p>
+      </div>
+      <form id="submit-form" onsubmit="handleSubmit(event)">
+        <div class="form-section">
+          <h3>What did you see?</h3>
+          <div class="form-group">
+            <label>Title *</label>
+            <input type="text" id="sub-title" placeholder="e.g. Bright triangular object over downtown" required />
           </div>
           <div class="form-group">
             <label>Description *</label>
-            <input type="text" id="expense-desc" placeholder="What did you spend on?" required />
+            <textarea id="sub-desc" rows="4" placeholder="Describe what you saw in detail — movement, color, size, behavior..." required></textarea>
+            <small>Be as specific as possible. Include weather conditions, time, and any other witnesses.</small>
           </div>
           <div class="form-row">
             <div class="form-group">
-              <label>Date *</label>
-              <input type="date" id="expense-date" required />
+              <label>Object Shape</label>
+              <select id="sub-shape">
+                <option value="">Select shape</option>
+                <option>Disc / Saucer</option>
+                <option>Triangle</option>
+                <option>Sphere / Orb</option>
+                <option>Cylinder</option>
+                <option>Boomerang / V-shape</option>
+                <option>Rectangular</option>
+                <option>Lights only</option>
+                <option>Other / Unknown</option>
+              </select>
             </div>
             <div class="form-group">
-              <label>Notes</label>
-              <input type="text" id="expense-notes" placeholder="Any extra notes" />
+              <label>Duration</label>
+              <input type="text" id="sub-duration" placeholder="e.g. 30 seconds" />
             </div>
           </div>
-          <button type="submit" class="btn-primary">Save Expense</button>
-          <button type="button" class="btn-secondary" onclick="hideExpenseForm()">Cancel</button>
-        </form>
-      </div>
-      <div id="expenses-list"></div>
-    </div>
-  </div>
+        </div>
 
-  <!-- MAINTENANCE -->
-  <div id="panel-maintenance" class="panel">
-    <div class="panel-inner">
-      <div class="panel-header">
-        <h1>Maintenance Log</h1>
-        <p>Keep track of boat maintenance tasks</p>
-      </div>
-      <div class="list-toolbar">
-        <select id="maintenance-status-filter" onchange="renderMaintenanceList()">
-          <option value="all">All Statuses</option>
-        </select>
-        <button class="btn-primary" onclick="showMaintenanceForm()">+ Add Task</button>
-      </div>
-      <div id="maintenance-form" class="form-panel" style="display:none;">
-        <form onsubmit="handleMaintenanceSubmit(event)">
+        <div class="form-section">
+          <h3>Location Details</h3>
           <div class="form-group">
-            <label>Title *</label>
-            <input type="text" id="task-title" placeholder="e.g. Change oil filter" required />
+            <label>Date of Sighting *</label>
+            <input type="date" id="sub-date" required />
           </div>
           <div class="form-row">
             <div class="form-group">
-              <label>Category *</label>
-              <select id="task-category" required></select>
+              <label>City *</label>
+              <input type="text" id="sub-city" placeholder="City" required />
             </div>
             <div class="form-group">
-              <label>Status *</label>
-              <select id="task-status" required></select>
+              <label>State / Region</label>
+              <input type="text" id="sub-state" placeholder="State" />
             </div>
-          </div>
-          <div class="form-group">
-            <label>Description</label>
-            <textarea id="task-desc" rows="3" placeholder="Task details..."></textarea>
+            <div class="form-group">
+              <label>Country *</label>
+              <input type="text" id="sub-country" placeholder="Country" required />
+            </div>
           </div>
           <div class="form-row">
             <div class="form-group">
-              <label>Due Date</label>
-              <input type="date" id="task-due" />
+              <label>Latitude</label>
+              <input type="number" id="sub-lat" step="0.0001" placeholder="e.g. 33.4484" />
             </div>
             <div class="form-group">
-              <label>Cost</label>
-              <input type="number" id="task-cost" step="0.01" placeholder="0.00" />
+              <label>Longitude</label>
+              <input type="number" id="sub-lng" step="0.0001" placeholder="e.g. -112.0740" />
             </div>
           </div>
-          <button type="submit" class="btn-primary">Save Task</button>
-          <button type="button" class="btn-secondary" onclick="hideMaintenanceForm()">Cancel</button>
-        </form>
+        </div>
+
+        <div class="form-section">
+          <h3>Evidence</h3>
+          <div class="form-group">
+            <label>Video URL(s)</label>
+            <input type="text" id="sub-video" placeholder="YouTube, Rumble, Vimeo — separate multiple with commas" />
+          </div>
+          <div class="form-group">
+            <label>Image URL</label>
+            <input type="text" id="sub-image" placeholder="https://..." />
+          </div>
+          <div class="form-group">
+            <label>Number of Witnesses</label>
+            <input type="number" id="sub-witnesses" placeholder="1" min="1" />
+          </div>
+          <div class="form-group">
+            <label>Your Name (optional)</label>
+            <input type="text" id="sub-name" placeholder="Anonymous" />
+          </div>
+          <div class="form-group">
+            <label>Source / Reference</label>
+            <input type="text" id="sub-source" placeholder="News article, MUFON case #, etc." />
+          </div>
+          <div class="form-group checkbox-group">
+            <label><input type="checkbox" id="sub-anon" /> Submit anonymously</label>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-primary">Submit Report</button>
+      </form>
+      <div id="submit-success" class="success-msg" style="display:none;">
+        ✓ Report submitted successfully! Your sighting is under review and will appear on the map once verified.
       </div>
-      <div id="maintenance-list"></div>
     </div>
   </div>
 
@@ -228,115 +266,80 @@
     <div class="panel-inner">
       <div class="panel-header">
         <h1>Analytics Dashboard</h1>
-        <p>Your liveaboard spending and maintenance trends</p>
+        <p>Global UAP sighting trends and patterns</p>
       </div>
       <div class="analytics-grid">
         <div class="analytics-card big">
-          <h3>Expenses by Category</h3>
-          <div id="chart-expenses" class="bar-chart"></div>
+          <h3>Sightings by Source</h3>
+          <div id="chart-source" class="bar-chart"></div>
         </div>
         <div class="analytics-card big">
-          <h3>Monthly Trend</h3>
-          <div id="chart-trend" class="bar-chart"></div>
+          <h3>Sightings by Decade</h3>
+          <div id="chart-decade" class="bar-chart"></div>
         </div>
         <div class="analytics-card">
-          <h3>Maintenance by Status</h3>
-          <div id="chart-maintenance" class="bar-chart"></div>
+          <h3>Top Shapes</h3>
+          <div id="chart-shapes" class="bar-chart"></div>
+        </div>
+        <div class="analytics-card">
+          <h3>Top Countries</h3>
+          <div id="chart-countries" class="bar-chart"></div>
+        </div>
+        <div class="analytics-card big">
+          <h3>Sightings With Video Evidence</h3>
+          <div id="chart-video" class="bar-chart"></div>
+        </div>
+        <div class="analytics-card">
+          <h3>Verification Rate</h3>
+          <div id="chart-verify" class="donut-chart-wrap"></div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- CHECKLISTS -->
-  <div id="panel-checklists" class="panel">
+  <!-- GOV DATA -->
+  <div id="panel-govdata" class="panel">
     <div class="panel-inner">
       <div class="panel-header">
-        <h1>Checklists</h1>
-        <p>Pre-departure and safety checklists</p>
+        <h1>Government Data Sources</h1>
+        <p>All government-sourced sightings are drawn from officially released documents and reports.</p>
       </div>
-      <div class="checklists-grid">
-        <div class="checklist-card">
-          <h3>⚓ Pre-Departure</h3>
-          <div class="checklist-items">
-            <label><input type="checkbox"> Check fuel levels</label>
-            <label><input type="checkbox"> Inspect engine oil</label>
-            <label><input type="checkbox"> Test battery voltage</label>
-            <label><input type="checkbox"> Check navigation lights</label>
-            <label><input type="checkbox"> Review weather forecast</label>
-            <label><input type="checkbox"> Secure all hatches</label>
-            <label><input type="checkbox"> Stow loose items</label>
-            <label><input type="checkbox"> Test VHF radio</label>
-          </div>
+      <div class="gov-grid">
+        <div class="gov-card featured">
+          <div class="gov-badge">Active</div>
+          <h3>AARO — All-domain Anomaly Resolution Office</h3>
+          <p>Established 2022. Pentagon's official UAP office. Historical Record Reports Vol. 1 & 2 released 2024.</p>
         </div>
-        <div class="checklist-card">
-          <h3>🛟 Safety Equipment</h3>
-          <div class="checklist-items">
-            <label><input type="checkbox"> Life jackets (enough for all)</label>
-            <label><input type="checkbox"> Flare expiration date</label>
-            <label><input type="checkbox"> Fire extinguishers</label>
-            <label><input type="checkbox"> First aid kit stocked</label>
-            <label><input type="checkbox"> EPIRB registered</label>
-            <label><input type="checkbox"> MOB pole ready</label>
-            <label><input type="checkbox"> Horn/ whistles working</label>
-          </div>
+        <div class="gov-card">
+          <div class="gov-badge">2021</div>
+          <h3>UAP Task Force / UAPTF</h3>
+          <p>Landmark June 2021 preliminary assessment covering 144 incidents from 2004–2021.</p>
         </div>
-        <div class="checklist-card">
-          <h3>🔧 Engine Maintenance</h3>
-          <div class="checklist-items">
-            <label><input type="checkbox"> Oil change interval</label>
-            <label><input type="checkbox"> Fuel filter replaced</label>
-            <label><input type="checkbox"> Impeller condition</label>
-            <label><input type="checkbox"> Belt tension</label>
-            <label><input type="checkbox"> Coolant levels</label>
-            <label><input type="checkbox"> Zincs replaced</label>
-          </div>
+        <div class="gov-card">
+          <div class="gov-badge">2023</div>
+          <h3>Congressional UAP Hearings</h3>
+          <p>Public testimony from Ryan Graves, David Fravor, and David Grusch under oath.</p>
         </div>
-        <div class="checklist-card">
-          <h3>❄️ Seasonal Prep</h3>
-          <div class="checklist-items">
-            <label><input type="checkbox"> Winterize engine</label>
-            <label><input type="checkbox"> Battery maintenance</label>
-            <label><input type="checkbox"> Cover sails</label>
-            <label><input type="checkbox"> Drain water tanks</label>
-            <label><input type="checkbox"> Clean bilge</label>
-            <label><input type="checkbox"> Check anode replacement date</label>
-          </div>
+        <div class="gov-card">
+          <div class="gov-badge">Declassified</div>
+          <h3>DoD Videos — Tic Tac, GIMBAL, GOFAST</h3>
+          <p>Three videos officially declassified by the DoD in April 2020.</p>
+        </div>
+        <div class="gov-card">
+          <div class="gov-badge">1952–1969</div>
+          <h3>Project Blue Book</h3>
+          <p>USAF investigation of 12,618 reports. 701 remain officially "Unidentified."</p>
+        </div>
+        <div class="gov-card">
+          <div class="gov-badge">FOIA</div>
+          <h3>FAA & Military FOIA Releases</h3>
+          <p>Radar data, pilot reports, and incident files obtained via Freedom of Information Act requests.</p>
         </div>
       </div>
-    </div>
-  </div>
-
-  <!-- FUEL CALCULATOR -->
-  <div id="panel-fuel" class="panel">
-    <div class="panel-inner">
-      <div class="panel-header">
-        <h1>Fuel Calculator</h1>
-        <p>Estimate fuel costs for your voyage</p>
+      <div class="panel-header" style="margin-top:2rem;">
+        <h1>Key Government Cases</h1>
       </div>
-      <div class="fuel-calculator">
-        <div class="form-group">
-          <label>Distance (nautical miles)</label>
-          <input type="number" id="fuel-distance" placeholder="0" oninput="calculateFuel()" />
-        </div>
-        <div class="form-group">
-          <label>Boat Fuel Consumption (gal/hr)</label>
-          <input type="number" id="fuel-consumption" placeholder="e.g. 2.5" oninput="calculateFuel()" />
-        </div>
-        <div class="form-group">
-          <label>Fuel Price ($/gallon)</label>
-          <input type="number" id="fuel-price" placeholder="e.g. 4.50" step="0.01" oninput="calculateFuel()" />
-        </div>
-        <div class="fuel-result">
-          <div class="result-box">
-            <span class="result-label">Fuel Needed</span>
-            <span class="result-value" id="fuel-needed">0 gal</span>
-          </div>
-          <div class="result-box">
-            <span class="result-label">Estimated Cost</span>
-            <span class="result-value" id="fuel-cost">$0.00</span>
-          </div>
-        </div>
-      </div>
+      <div id="gov-incidents-list"></div>
     </div>
   </div>
 
@@ -345,7 +348,7 @@
     <div class="panel-inner">
       <div class="panel-header">
         <h1>Settings</h1>
-        <p>Customize your DockLedger experience</p>
+        <p>Customize your PhenoMap experience</p>
       </div>
 
       <div class="settings-section">
@@ -353,23 +356,92 @@
         <div class="setting-row">
           <div>
             <div class="setting-label">Dark Mode</div>
-            <div class="setting-desc">Nautical dark theme</div>
+            <div class="setting-desc">Optimized for nighttime sighting research</div>
           </div>
           <label class="toggle"><input type="checkbox" id="s-darkmode" checked onchange="toggleDarkMode(this)"><span class="slider"></span></label>
         </div>
         <div class="setting-row">
           <div>
             <div class="setting-label">Cluster Markers</div>
-            <div class="setting-desc">Group nearby marinas</div>
+            <div class="setting-desc">Group nearby sightings at low zoom levels</div>
           </div>
-          <label class="toggle"><input type="checkbox" id="s-cluster" checked><span class="slider"></span></label>
+          <label class="toggle"><input type="checkbox" id="s-cluster" checked onchange="toggleClustering(this)"><span class="slider"></span></label>
+        </div>
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">Show Timeline Bar</div>
+            <div class="setting-desc">Year slider on the map</div>
+          </div>
+          <label class="toggle"><input type="checkbox" id="s-timeline" checked onchange="toggleTimeline(this)"><span class="slider"></span></label>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <h3>🔔 Notifications</h3>
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">Nearby Sighting Alerts</div>
+            <div class="setting-desc">Alert when a new sighting is reported near you</div>
+          </div>
+          <label class="toggle"><input type="checkbox" id="s-nearby" onchange="saveSettings()"><span class="slider"></span></label>
+        </div>
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">Verified Sighting Alerts</div>
+            <div class="setting-desc">Notify when a sighting gets verified</div>
+          </div>
+          <label class="toggle"><input type="checkbox" id="s-verified-alert" checked onchange="saveSettings()"><span class="slider"></span></label>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <h3>🗄 Data Sources</h3>
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">NUFORC Database</div>
+            <div class="setting-desc">National UFO Reporting Center (170,000+ reports)</div>
+          </div>
+          <label class="toggle"><input type="checkbox" id="s-nuforc" checked onchange="saveSettings()"><span class="slider"></span></label>
+        </div>
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">MUFON Reports</div>
+            <div class="setting-desc">Mutual UFO Network field investigations</div>
+          </div>
+          <label class="toggle"><input type="checkbox" id="s-mufon" checked onchange="saveSettings()"><span class="slider"></span></label>
+        </div>
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">Community Reports</div>
+            <div class="setting-desc">User-submitted sightings</div>
+          </div>
+          <label class="toggle"><input type="checkbox" id="s-community" checked onchange="saveSettings()"><span class="slider"></span></label>
+        </div>
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">Government / Military Only</div>
+            <div class="setting-desc">Show only verified government sources</div>
+          </div>
+          <label class="toggle"><input type="checkbox" id="s-govonly" onchange="saveSettings()"><span class="slider"></span></label>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <h3>🔒 Privacy</h3>
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">Anonymous Reports</div>
+            <div class="setting-desc">Hide identity when submitting sightings</div>
+          </div>
+          <label class="toggle"><input type="checkbox" id="s-anon" checked onchange="saveSettings()"><span class="slider"></span></label>
         </div>
       </div>
 
       <div class="settings-section">
         <h3>📤 Export Data</h3>
-        <button class="btn-primary" onclick="exportExpensesCSV()">Export Expenses CSV</button>
-        <button class="btn-secondary" onclick="exportMaintenanceJSON()">Export Maintenance JSON</button>
+        <p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:1rem;">Download the full sighting database for your own analysis.</p>
+        <button class="btn-primary" onclick="exportCSV()">Download CSV</button>
+        <button class="btn-secondary" onclick="exportJSON()">Download JSON</button>
       </div>
     </div>
   </div>
@@ -380,17 +452,18 @@
 <div id="paywall-overlay">
   <div class="paywall-box">
     <button class="paywall-close" onclick="closePaywall()">✕</button>
-    <div class="pw-logo">⚓ DockLedger</div>
+    <div class="pw-logo"><span class="logo-pulse"></span> PhenoMap</div>
     <h2>Upgrade Your Access</h2>
-    <p>Get the full liveaboard experience with premium features.</p>
+    <p>The most comprehensive UAP database on the planet — powered by declassified government data.</p>
     <div class="pw-plans">
       <div class="pw-plan">
         <h3>Free</h3>
         <div class="price">$0<span>/mo</span></div>
         <ul>
-          <li>Marina map (limited)</li>
-          <li>Basic expense tracking</li>
-          <li>5 maintenance tasks</li>
+          <li>Global map view</li>
+          <li>30 key sightings</li>
+          <li>Basic search & filters</li>
+          <li>Community data access</li>
         </ul>
         <button class="pw-btn pw-free" onclick="closePaywall()">Current Plan</button>
       </div>
@@ -399,16 +472,36 @@
         <h3>Pro</h3>
         <div class="price">$4.99<span>/month</span></div>
         <ul>
-          <li>All 25+ marinas</li>
-          <li>Unlimited expenses & tasks</li>
-          <li>Analytics dashboard</li>
-          <li>Export data</li>
-          <li>Ad-free</li>
+          <li>Everything in Free</li>
+          <li>Real-time sighting alerts</li>
+          <li>Advanced analytics dashboard</li>
+          <li>Priority report verification</li>
+          <li>Export data (CSV, JSON)</li>
+          <li>Ad-free experience</li>
         </ul>
         <button class="pw-btn pw-upgrade" onclick="openStripe()">Upgrade to Pro</button>
       </div>
+      <div class="pw-plan pw-premium">
+        <h3>Premium</h3>
+        <div class="price">$12.99<span>/month</span></div>
+        <ul>
+          <li>Everything in Pro</li>
+          <li>Historical NUFORC data (200k+ records)</li>
+          <li>API access for integrations</li>
+          <li>Custom alert zones on map</li>
+          <li>Heatmap and trend analysis</li>
+          <li>Satellite imagery overlay</li>
+          <li>Priority support</li>
+        </ul>
+        <button class="pw-btn pw-premium-btn" onclick="openStripe()">Go Premium</button>
+      </div>
     </div>
-    <div class="pw-dismiss" onclick="closePaywall()">Skip for now</div>
+    <div class="pw-dismiss" onclick="closePaywall()">Skip for now — continue with free access</div>
+    <div style="margin-top:1rem;font-size:0.7rem;color:var(--text-muted);">
+      <div id="ad-placeholder" style="border:1px dashed var(--border);padding:0.5rem;border-radius:6px;text-align:center;">
+        Advertisement — <a href="#" onclick="showPaywall();return false;" style="color:var(--accent)">Upgrade to Pro</a> for an ad-free experience.
+      </div>
+    </div>
   </div>
 </div>
 
@@ -420,59 +513,9 @@
   </div>
 </div>
 
-<!-- ── TOAST ───────────────────────────────────────────────── -->
-<div id="toast" class="toast"></div>
-
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 <script src="data.js"></script>
 <script src="app.js"></script>
-
-<script>
-function handleLogin(e) {
-  e.preventDefault();
-  document.getElementById('login-screen').classList.add('hidden');
-  localStorage.setItem('dockledger_logged_in', 'true');
-}
-
-function showExpenseForm() {
-  document.getElementById('expense-form').style.display = 'block';
-}
-
-function hideExpenseForm() {
-  document.getElementById('expense-form').style.display = 'none';
-}
-
-function showMaintenanceForm() {
-  document.getElementById('maintenance-form').style.display = 'block';
-}
-
-function hideMaintenanceForm() {
-  document.getElementById('maintenance-form').style.display = 'none';
-}
-
-function calculateFuel() {
-  const dist = parseFloat(document.getElementById('fuel-distance').value) || 0;
-  const cons = parseFloat(document.getElementById('fuel-consumption').value) || 0;
-  const price = parseFloat(document.getElementById('fuel-price').value) || 0;
-  
-  const needed = dist * (cons / 6); // rough estimate: 6 nm per gallon
-  const cost = needed * price;
-  
-  document.getElementById('fuel-needed').textContent = needed.toFixed(1) + ' gal';
-  document.getElementById('fuel-cost').textContent = '$' + cost.toFixed(2);
-}
-
-function applyFilters() {
-  // Filter implementation for map markers
-}
-
-// Check login on load
-window.addEventListener('DOMContentLoaded', () => {
-  if (localStorage.getItem('dockledger_logged_in') === 'true') {
-    document.getElementById('login-screen').classList.add('hidden');
-  }
-});
-</script>
 </body>
 </html>

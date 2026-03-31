@@ -1,43 +1,42 @@
 // ============================================================
-//  DockLedger — Liveaboard Marina Companion App
+//  PhenoMap v2 — Application Logic
 // ============================================================
 
 const STRIPE_URL = 'https://buy.stripe.com/5kQaEZ5zy4QI4vJaLr83C04';
 
-let map, markerCluster;
+let map, markerCluster, heatLayer;
 let allMarkers = [];
-let expenses = [];
-let maintenanceTasks = [];
-let userBoats = [];
+let userSightings = [];
 let isPremium = false;
 let settings = {};
+let timelineYears = [];
 
-// Colors for marina markers
-const MARINA_COLORS = {
-  affordable: '#22c55e',
-  moderate: '#f59e0b',
-  premium: '#ef4444'
+const SOURCE_COLORS = {
+  gov:      '#f59e0b',
+  mil:      '#ef4444',
+  civilian: '#22c55e',
+  aaro:     '#00d4ff'
 };
 
 // ── INIT ─────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
   loadSettings();
-  loadExpenses();
-  loadMaintenance();
-  loadBoats();
+  loadUserSightings();
   checkPremium();
   initMap();
-  renderExpensesList();
-  renderMaintenanceList();
+  initTimeline();
+  populateYearFilter();
+  renderSightingsList();
+  renderGovIncidents();
   renderAnalytics();
   updateSidebarStats();
   showPaywallDelayed();
-  populateFilters();
+  showRandomAlert();
 });
 
 // ── MAP ───────────────────────────────────────────────────────
 function initMap() {
-  map = L.map('map', { center: [30, -85], zoom: 4, minZoom: 3, maxZoom: 18, zoomControl: true });
+  map = L.map('map', { center: [25, 5], zoom: 2, minZoom: 2, maxZoom: 18, zoomControl: true });
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
@@ -54,94 +53,145 @@ function initMap() {
   });
 
   map.addLayer(markerCluster);
-  buildMarinaMarkers();
+  buildMarkers();
 }
 
-function buildMarinaMarkers() {
+function buildMarkers() {
   allMarkers = [];
   markerCluster.clearLayers();
 
-  MARINAS.forEach(m => {
-    const color = m.price < 350 ? MARINA_COLORS.affordable : 
-                  m.price < 500 ? MARINA_COLORS.moderate : 
-                  MARINA_COLORS.premium;
-    
+  [...SIGHTINGS, ...userSightings].forEach(s => {
+    if (!s.lat || !s.lng) return;
+    const color = SOURCE_COLORS[s.source] || '#94a3b8';
+    const isVerified = s.status === 'verified';
+
     const icon = L.divIcon({
       html: `<div style="
-        width:20px;height:20px;
+        width:${isVerified ? 16 : 12}px;
+        height:${isVerified ? 16 : 12}px;
         background:${color};
-        border:2px solid rgba(255,255,255,0.9);
-        border-radius:4px;
-        box-shadow:0 0 8px ${color}88;
+        border:2px solid rgba(255,255,255,${isVerified ? 0.9 : 0.6});
+        border-radius:50%;
+        box-shadow:0 0 ${isVerified ? 10 : 6}px ${color};
+        ${isVerified ? 'outline:2px solid ' + color + '44;outline-offset:2px;' : ''}
       "></div>`,
-      className: '', iconSize: [20, 20], iconAnchor: [10, 10]
+      className: '', iconSize: [16, 16], iconAnchor: [8, 8]
     });
 
-    const marker = L.marker([m.lat, m.lng], { icon });
-    const amenities = m.amenities.slice(0, 3).join(', ');
-    
+    const marker = L.marker([s.lat, s.lng], { icon });
+    const shortDesc = (s.description || '').slice(0, 100) + (s.description?.length > 100 ? '…' : '');
+
     marker.bindPopup(`
-      <div class="popup-title">${escHtml(m.name)}</div>
-      <div class="popup-loc">📍 ${escHtml(m.location)}</div>
-      <div class="popup-price">$${m.price}/mo</div>
-      <div class="popup-amenities">${amenities}</div>
-      <div class="popup-liveaboard">${m.liveaboard ? '✅ Liveaboard OK' : '❌ No Liveaboard'}</div>
-      <button class="popup-btn" onclick="openMarinaModal(${m.id})">
-        View Details
+      <div class="popup-title">${escHtml(s.title)}</div>
+      <div class="popup-date">${formatDate(s.date)} · ${sourceLabel(s.source)}</div>
+      <div class="popup-loc">📍 ${escHtml(s.location)}</div>
+      <div class="popup-desc">${escHtml(shortDesc)}</div>
+      <button class="popup-btn" onclick="openModal(${JSON.stringify(s.id ?? 'u' + s.uid)})">
+        View Details ${s.videos?.length ? '▶' : ''}
       </button>
     `, { maxWidth: 280 });
 
-    marker._marinaData = m;
+    marker._sightingData = s;
     allMarkers.push(marker);
     markerCluster.addLayer(marker);
   });
+
+  updateCount();
 }
 
-function openMarinaModal(id) {
-  const m = MARINAS.find(x => x.id === id);
-  if (!m) return;
+function applyFilters() {
+  const src    = document.getElementById('filter-source').value;
+  const shape  = document.getElementById('filter-shape').value;
+  const year   = document.getElementById('filter-year').value;
+  const status = document.getElementById('filter-status').value;
+  const video  = document.getElementById('filter-video').value;
 
-  document.getElementById('modal-content').innerHTML = `
-    <h2>${escHtml(m.name)}</h2>
-    <div class="modal-meta">
-      <span>📍 ${escHtml(m.location)}</span>
-      <span>$${m.price}/month</span>
-    </div>
-    <div class="modal-amenities">
-      <h4>Amenities:</h4>
-      <div class="amenity-tags">
-        ${m.amenities.map(a => `<span class="amenity-tag">${a}</span>`).join('')}
-      </div>
-    </div>
-    <div class="modal-contact">
-      <h4>Contact:</h4>
-      <p>📞 ${escHtml(m.contact)}</p>
-      <p>🌐 <a href="${m.website}" target="_blank">${m.website}</a></p>
-    </div>
-    <div class="modal-actions">
-      <button class="btn-map" onclick="flyToMarina(${m.lat},${m.lng})">📍 Show on Map</button>
-      <button class="btn-map" onclick="saveFavoriteMarina(${m.id})">⭐ Save Favorite</button>
-    </div>
-  `;
+  markerCluster.clearLayers();
+  let visible = 0;
 
-  document.getElementById('modal-overlay').classList.add('open');
+  allMarkers.forEach(m => {
+    const s = m._sightingData;
+    const sy = s.date?.split('-')[0] || '';
+    const ss = (s.shape || '').toLowerCase();
+
+    const ok =
+      (src    === 'all' || s.source === src) &&
+      (shape  === 'all' || ss.includes(shape)) &&
+      (year   === 'all' || sy === year) &&
+      (status === 'all' || s.status === status) &&
+      (video  === 'all' || (video === 'yes' && s.videos?.length));
+
+    if (ok) { markerCluster.addLayer(m); visible++; }
+  });
+
+  document.getElementById('sighting-count').textContent = `${visible} sightings`;
 }
 
-function flyToMarina(lat, lng) {
-  closeModal();
-  showPanel('map', document.querySelector('.snav[data-panel="map"]'));
-  setTimeout(() => map.flyTo([lat, lng], 10, { duration: 1.2 }), 100);
+function updateCount() {
+  document.getElementById('sighting-count').textContent = `${allMarkers.length} sightings`;
 }
 
-function saveFavoriteMarina(id) {
-  const favs = JSON.parse(localStorage.getItem('dockledger_favorites') || '[]');
-  if (!favs.includes(id)) {
-    favs.push(id);
-    localStorage.setItem('dockledger_favorites', JSON.stringify(favs));
-    alert('Marina saved to favorites!');
-  } else {
-    alert('Already in favorites!');
+// ── TIMELINE ─────────────────────────────────────────────────
+function initTimeline() {
+  const all = [...SIGHTINGS, ...userSightings];
+  timelineYears = [...new Set(all.map(s => parseInt(s.date)))].filter(Boolean).sort();
+  const slider = document.getElementById('timeline-slider');
+  if (slider) {
+    slider.min = 0;
+    slider.max = timelineYears.length;
+    slider.value = timelineYears.length;
   }
+}
+
+function onTimelineChange(val) {
+  const idx = parseInt(val);
+  const label = document.getElementById('timeline-year-label');
+  if (idx >= timelineYears.length) {
+    if (label) label.textContent = 'All';
+    buildMarkers();
+    return;
+  }
+  const year = timelineYears[idx];
+  if (label) label.textContent = year;
+
+  markerCluster.clearLayers();
+  allMarkers.forEach(m => {
+    const sy = parseInt(m._sightingData.date);
+    if (sy <= year) markerCluster.addLayer(m);
+  });
+}
+
+// ── HEATMAP ───────────────────────────────────────────────────
+function toggleHeatmap() {
+  const btn = document.getElementById('btn-heat');
+  if (heatLayer && map.hasLayer(heatLayer)) {
+    map.removeLayer(heatLayer);
+    btn.classList.remove('active');
+    return;
+  }
+
+  const pts = [...SIGHTINGS, ...userSightings]
+    .filter(s => s.lat && s.lng)
+    .map(s => [s.lat, s.lng, 0.5]);
+
+  // Simple CSS-based visual since we can't load heatmap plugin
+  pts.forEach(([lat, lng]) => {
+    L.circle([lat, lng], {
+      radius: 150000,
+      color: 'transparent',
+      fillColor: '#ef4444',
+      fillOpacity: 0.04
+    }).addTo(map);
+  });
+
+  btn.classList.add('active');
+}
+
+function locateMe() {
+  if (!navigator.geolocation) return alert('Geolocation not available.');
+  navigator.geolocation.getCurrentPosition(pos => {
+    map.flyTo([pos.coords.latitude, pos.coords.longitude], 8, { duration: 1.5 });
+  }, () => alert('Could not get your location.'));
 }
 
 // ── PANELS ────────────────────────────────────────────────────
@@ -151,9 +201,9 @@ function showPanel(name, btn) {
   document.getElementById(`panel-${name}`).classList.add('active');
   if (btn) btn.classList.add('active');
   if (name === 'map') setTimeout(() => map?.invalidateSize(), 50);
-  if (name === 'expenses') renderExpensesList();
-  if (name === 'maintenance') renderMaintenanceList();
+  if (name === 'sightings') renderSightingsList();
   if (name === 'analytics') renderAnalytics();
+  // Close sidebar on mobile
   if (window.innerWidth < 768) document.getElementById('sidebar').classList.remove('open');
 }
 
@@ -161,204 +211,151 @@ function toggleSidebar() {
   document.getElementById('sidebar').classList.toggle('open');
 }
 
-// ── EXPENSES ─────────────────────────────────────────────────
-function renderExpensesList() {
-  const cat = document.getElementById('expense-category-filter')?.value || 'all';
-  const filtered = cat === 'all' ? expenses : expenses.filter(e => e.category === cat);
-  
-  const container = document.getElementById('expenses-list');
+// ── SIGHTINGS LIST ─────────────────────────────────────────────
+function renderSightingsList() {
+  const q      = (document.getElementById('search-input')?.value || '').toLowerCase();
+  const shape  = document.getElementById('list-shape')?.value || 'all';
+  const status = document.getElementById('list-status')?.value || 'all';
+  const combined = [...SIGHTINGS, ...userSightings];
+
+  const filtered = combined.filter(s => {
+    const matchQ = !q || s.title?.toLowerCase().includes(q) || s.location?.toLowerCase().includes(q) || s.description?.toLowerCase().includes(q);
+    const matchShape = shape === 'all' || (s.shape || '').toLowerCase().includes(shape);
+    const matchStatus = status === 'all' || s.status === status;
+    return matchQ && matchShape && matchStatus;
+  });
+
+  const container = document.getElementById('sightings-list');
   if (!container) return;
 
-  const total = filtered.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
-
-  container.innerHTML = `
-    <div class="expense-summary">
-      <span>Total: <strong>$${total.toFixed(2)}</strong></span>
-      <span>${filtered.length} expenses</span>
-    </div>
-    ${filtered.map(e => `
-      <div class="expense-card" onclick="openExpenseModal(${e.id})">
-        <div class="expense-left">
-          <span class="expense-category">${e.category}</span>
-          <span class="expense-desc">${escHtml(e.description)}</span>
-        </div>
-        <div class="expense-right">
-          <span class="expense-amount">$${parseFloat(e.amount).toFixed(2)}</span>
-          <span class="expense-date">${formatDate(e.date)}</span>
+  container.innerHTML = filtered.map(s => `
+    <div class="sighting-card" onclick="openModal(${JSON.stringify(s.id ?? 'u' + s.uid)})">
+      <div class="card-top">
+        <span class="card-title">${escHtml(s.title)}</span>
+        <div class="card-right">
+          <span class="card-date">${formatDate(s.date)}</span>
+          <span class="status-badge status-${s.status || 'pending'}">${s.status || 'pending'}</span>
         </div>
       </div>
-    `).join('')}
-    ${filtered.length === 0 ? '<div class="empty-state">No expenses yet. Add one!</div>' : ''}
-  `;
-}
-
-function openExpenseModal(id) {
-  const e = expenses.find(x => x.id === id);
-  if (!e) return;
-
-  document.getElementById('modal-content').innerHTML = `
-    <h2>${escHtml(e.description)}</h2>
-    <div class="modal-meta">
-      <span>${e.category}</span> · <span>${formatDate(e.date)}</span>
-    </div>
-    <div class="modal-amount">$${parseFloat(e.amount).toFixed(2)}</div>
-    ${e.notes ? `<div class="modal-notes">${escHtml(e.notes)}</div>` : ''}
-    <div class="modal-actions">
-      <button class="btn-map" onclick="deleteExpense(${e.id})">🗑 Delete</button>
-    </div>
-  `;
-
-  document.getElementById('modal-overlay').classList.add('open');
-}
-
-function handleExpenseSubmit(e) {
-  e.preventDefault();
-  
-  const expense = {
-    id: Date.now(),
-    amount: document.getElementById('expense-amount').value,
-    category: document.getElementById('expense-category').value,
-    description: document.getElementById('expense-desc').value,
-    date: document.getElementById('expense-date').value,
-    notes: document.getElementById('expense-notes').value,
-    boatId: document.getElementById('expense-boat')?.value || null
-  };
-
-  expenses.push(expense);
-  saveExpenses();
-  renderExpensesList();
-  updateSidebarStats();
-  document.getElementById('expense-form').reset();
-  showToast('Expense added!');
-}
-
-function deleteExpense(id) {
-  expenses = expenses.filter(e => e.id !== id);
-  saveExpenses();
-  closeModal();
-  renderExpensesList();
-  updateSidebarStats();
-}
-
-// ── MAINTENANCE ───────────────────────────────────────────────
-function renderMaintenanceList() {
-  const status = document.getElementById('maintenance-status-filter')?.value || 'all';
-  const filtered = status === 'all' ? maintenanceTasks : maintenanceTasks.filter(t => t.status === status);
-  
-  const container = document.getElementById('maintenance-list');
-  if (!container) return;
-
-  container.innerHTML = filtered.map(t => `
-    <div class="maintenance-card" onclick="openMaintenanceModal(${t.id})">
-      <div class="maintenance-header">
-        <span class="maintenance-title">${escHtml(t.title)}</span>
-        <span class="status-badge status-${t.status.toLowerCase().replace(' ', '-')}">${t.status}</span>
+      <div class="card-meta">📍 ${escHtml(s.location)}${s.witnesses ? ` · ${s.witnesses} witness(es)` : ''}</div>
+      <div class="card-desc">${escHtml(s.description)}</div>
+      <div class="card-tags">
+        <span class="tag tag-${s.source}">${sourceLabel(s.source)}</span>
+        ${s.videos?.length ? '<span class="tag tag-video">▶ Video</span>' : ''}
+        ${s.userSubmitted ? '<span class="tag tag-user">User</span>' : ''}
+        ${s.shape ? `<span class="tag" style="background:var(--bg4);color:var(--text-muted)">${escHtml(s.shape)}</span>` : ''}
       </div>
-      <div class="maintenance-meta">
-        <span>${t.category}</span> · <span>${t.boatName || 'No boat assigned'}</span>
-      </div>
-      <div class="maintenance-desc">${escHtml(t.description)}</div>
     </div>
   `).join('');
-
-  if (filtered.length === 0) {
-    container.innerHTML += '<div class="empty-state">No maintenance tasks. Add one!</div>';
-  }
 }
 
-function openMaintenanceModal(id) {
-  const t = maintenanceTasks.find(x => x.id === id);
-  if (!t) return;
+// ── GOV INCIDENTS ─────────────────────────────────────────────
+function renderGovIncidents() {
+  const list = SIGHTINGS.filter(s => ['gov','mil','aaro'].includes(s.source));
+  const container = document.getElementById('gov-incidents-list');
+  if (!container) return;
 
-  document.getElementById('modal-content').innerHTML = `
-    <h2>${escHtml(t.title)}</h2>
-    <div class="modal-meta">
-      <span>${t.category}</span> · <span class="status-badge status-${t.status.toLowerCase().replace(' ', '-')}">${t.status}</span>
+  container.innerHTML = list.map(s => `
+    <div class="sighting-card" onclick="openModal(${s.id})">
+      <div class="card-top">
+        <span class="card-title">${escHtml(s.title)}</span>
+        <div class="card-right">
+          <span class="card-date">${formatDate(s.date)}</span>
+          <span class="status-badge status-${s.status || 'verified'}">${s.status || 'verified'}</span>
+        </div>
+      </div>
+      <div class="card-meta">📍 ${escHtml(s.location)}</div>
+      <div class="card-desc">${escHtml(s.gov_ref || '')}</div>
+      <div class="card-tags">
+        <span class="tag tag-${s.source}">${sourceLabel(s.source)}</span>
+        ${s.videos?.length ? '<span class="tag tag-video">▶ Video</span>' : ''}
+      </div>
     </div>
-    <div class="modal-desc">${escHtml(t.description)}</div>
-    ${t.cost ? `<div class="modal-cost">Cost: $${t.cost}</div>` : ''}
-    ${t.dueDate ? `<div class="modal-due">Due: ${formatDate(t.dueDate)}</div>` : ''}
-    <div class="modal-actions">
-      <button class="btn-map" onclick="deleteMaintenance(${t.id})">🗑 Delete</button>
-    </div>
-  `;
-
-  document.getElementById('modal-overlay').classList.add('open');
-}
-
-function handleMaintenanceSubmit(e) {
-  e.preventDefault();
-  
-  const task = {
-    id: Date.now(),
-    title: document.getElementById('task-title').value,
-    category: document.getElementById('task-category').value,
-    status: document.getElementById('task-status').value,
-    description: document.getElementById('task-desc').value,
-    dueDate: document.getElementById('task-due').value,
-    cost: document.getElementById('task-cost').value,
-    boatId: document.getElementById('task-boat')?.value || null,
-    boatName: document.getElementById('task-boat')?.selectedOptions?.[0]?.text || ''
-  };
-
-  maintenanceTasks.push(task);
-  saveMaintenance();
-  renderMaintenanceList();
-  updateSidebarStats();
-  document.getElementById('maintenance-form').reset();
-  showToast('Task added!');
-}
-
-function deleteMaintenance(id) {
-  maintenanceTasks = maintenanceTasks.filter(t => t.id !== id);
-  saveMaintenance();
-  closeModal();
-  renderMaintenanceList();
-  updateSidebarStats();
+  `).join('');
 }
 
 // ── ANALYTICS ────────────────────────────────────────────────
 function renderAnalytics() {
-  // Expense by category
-  const catTotals = {};
-  expenses.forEach(e => {
-    catTotals[e.category] = (catTotals[e.category] || 0) + parseFloat(e.amount || 0);
-  });
-  renderBarChart('chart-expenses', Object.entries(catTotals).sort((a,b) => b[1] - a[1]).slice(0, 6));
+  const all = [...SIGHTINGS, ...userSightings];
 
-  // Maintenance by status
-  const statusCounts = {};
-  maintenanceTasks.forEach(t => {
-    statusCounts[t.status] = (statusCounts[t.status] || 0) + 1;
+  // Source chart
+  const srcCounts = {};
+  all.forEach(s => srcCounts[s.source] = (srcCounts[s.source] || 0) + 1);
+  renderBarChart('chart-source', Object.entries(srcCounts).sort((a,b)=>b[1]-a[1]), {
+    'gov':'#f59e0b','mil':'#ef4444','aaro':'#00d4ff','civilian':'#22c55e'
   });
-  renderBarChart('chart-maintenance', Object.entries(statusCounts), null);
 
-  // Monthly trend
-  const monthlyTotals = {};
-  expenses.forEach(e => {
-    const month = e.date?.slice(0, 7) || 'Unknown';
-    monthlyTotals[month] = (monthlyTotals[month] || 0) + parseFloat(e.amount || 0);
+  // Decade chart
+  const decadeCounts = {};
+  all.forEach(s => {
+    const yr = parseInt(s.date);
+    if (yr) {
+      const dec = Math.floor(yr/10)*10;
+      decadeCounts[dec+'s'] = (decadeCounts[dec+'s'] || 0) + 1;
+    }
   });
-  const sortedMonths = Object.entries(monthlyTotals).sort((a,b) => a[0].localeCompare(b[0])).slice(-6);
-  renderBarChart('chart-trend', sortedMonths, null);
+  renderBarChart('chart-decade', Object.entries(decadeCounts).sort((a,b)=>a[0].localeCompare(b[0])), null);
+
+  // Shape chart
+  const shapeCounts = {};
+  all.forEach(s => {
+    const sh = (s.shape || 'Unknown').split('/')[0].trim().split(' ')[0];
+    shapeCounts[sh] = (shapeCounts[sh] || 0) + 1;
+  });
+  renderBarChart('chart-shapes', Object.entries(shapeCounts).sort((a,b)=>b[1]-a[1]).slice(0,6), null);
+
+  // Countries
+  const countryCounts = {};
+  all.forEach(s => {
+    const c = s.location?.split(',').pop()?.trim() || 'Unknown';
+    countryCounts[c] = (countryCounts[c] || 0) + 1;
+  });
+  renderBarChart('chart-countries', Object.entries(countryCounts).sort((a,b)=>b[1]-a[1]).slice(0,6), null);
+
+  // Video chart
+  const withVideo = all.filter(s => s.videos?.length).length;
+  renderBarChart('chart-video', [['With Video', withVideo], ['Without Video', all.length - withVideo]], {
+    'With Video':'#7c3aed', 'Without Video':'#1e3350'
+  });
+
+  // Verification donut
+  const verified = all.filter(s => s.status === 'verified').length;
+  const pending = all.length - verified;
+  const pct = Math.round(verified / all.length * 100);
+  const donut = document.getElementById('chart-verify');
+  if (donut) {
+    donut.innerHTML = `
+      <svg viewBox="0 0 100 100" width="100" height="100">
+        <circle cx="50" cy="50" r="38" fill="none" stroke="#1e3350" stroke-width="12"/>
+        <circle cx="50" cy="50" r="38" fill="none" stroke="#22c55e" stroke-width="12"
+          stroke-dasharray="${pct * 2.39} ${(100-pct)*2.39}"
+          stroke-dashoffset="59.5" stroke-linecap="round"/>
+        <text x="50" y="54" text-anchor="middle" fill="#e2e8f0" font-size="18" font-weight="700">${pct}%</text>
+      </svg>
+      <div style="font-size:0.75rem;color:var(--text-muted);text-align:center">
+        <div><span style="color:#22c55e">■</span> Verified: ${verified}</div>
+        <div><span style="color:#f59e0b">■</span> Pending: ${pending}</div>
+      </div>
+    `;
+  }
 }
 
 function renderBarChart(containerId, entries, colorMap) {
   const container = document.getElementById(containerId);
   if (!container || !entries.length) return;
   const max = Math.max(...entries.map(e => e[1]));
-  const colors = ['#00d4ff','#7c3aed','#f59e0b','#22c55e','#ef4444','#06b6d4'];
+  const colors = ['#00d4ff','#7c3aed','#f59e0b','#22c55e','#ef4444','#06b6d4','#8b5cf6'];
 
   container.innerHTML = entries.map(([label, val], i) => {
     const color = colorMap ? (colorMap[label] || colors[i % colors.length]) : colors[i % colors.length];
-    const pct = max > 0 ? Math.round(val / max * 100) : 0;
+    const pct = Math.round(val / max * 100);
     return `
       <div class="bar-row">
         <span class="bar-label">${escHtml(String(label))}</span>
         <div class="bar-track">
           <div class="bar-fill" style="width:${pct}%;background:${color}"></div>
         </div>
-        <span class="bar-val">${typeof val === 'number' && val > 100 ? '$' + val.toFixed(0) : val}</span>
+        <span class="bar-val">${val}</span>
       </div>
     `;
   }).join('');
@@ -366,54 +363,194 @@ function renderBarChart(containerId, entries, colorMap) {
 
 // ── SIDEBAR STATS ─────────────────────────────────────────────
 function updateSidebarStats() {
-  const totalExpenses = expenses.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
-  const pendingTasks = maintenanceTasks.filter(t => t.status === 'Pending' || t.status === 'In Progress').length;
-  const completedTasks = maintenanceTasks.filter(t => t.status === 'Completed').length;
-  const savedMarinas = (JSON.parse(localStorage.getItem('dockledger_favorites') || '[]')).length;
+  const all = [...SIGHTINGS, ...userSightings];
+  const countries = new Set(all.map(s => s.location?.split(',').pop()?.trim())).size;
+  const now = new Date();
+  const thisMonth = all.filter(s => {
+    if (!s.date) return false;
+    const d = new Date(s.date);
+    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+  }).length;
+  const verified = all.filter(s => s.status === 'verified').length;
 
-  document.getElementById('sb-expenses').textContent = `$${totalExpenses.toFixed(0)}`;
-  document.getElementById('sb-tasks').textContent = pendingTasks;
-  document.getElementById('sb-completed').textContent = completedTasks;
-  document.getElementById('sb-marinas').textContent = savedMarinas;
+  document.getElementById('sb-total').textContent   = all.length;
+  document.getElementById('sb-verified').textContent = verified;
+  document.getElementById('sb-countries').textContent = countries;
+  document.getElementById('sb-month').textContent   = thisMonth || all.length;
 }
 
 // ── MODAL ─────────────────────────────────────────────────────
-function closeModal() { 
-  document.getElementById('modal-overlay').classList.remove('open'); 
+function openModal(id) {
+  const all = [...SIGHTINGS, ...userSightings];
+  let s;
+  if (typeof id === 'string' && id.startsWith('u')) {
+    s = userSightings.find(x => String(x.uid) === id.slice(1));
+  } else {
+    s = all.find(x => x.id === id);
+  }
+  if (!s) return;
+
+  document.getElementById('modal-content').innerHTML = `
+    <h2>${escHtml(s.title)}</h2>
+    <div class="modal-meta">
+      <span>${formatDate(s.date)}</span> ·
+      <span>📍 ${escHtml(s.location)}</span> ·
+      <span class="tag tag-${s.source}" style="font-size:0.7rem">${sourceLabel(s.source)}</span>
+      <span class="status-badge status-${s.status || 'pending'}" style="font-size:0.7rem">${s.status || 'pending'}</span>
+    </div>
+    ${s.witnesses ? `<div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:0.6rem">👥 Witnesses: ${escHtml(String(s.witnesses))}</div>` : ''}
+    ${s.shape ? `<div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:0.6rem">🔷 Shape: ${escHtml(s.shape)}</div>` : ''}
+    ${s.duration ? `<div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:0.6rem">⏱ Duration: ${escHtml(s.duration)}</div>` : ''}
+    <div class="modal-desc">${escHtml(s.description)}</div>
+    ${buildVideoHtml(s.videos || [])}
+    ${s.gov_ref ? `<div class="modal-source"><strong>Government Reference:</strong> ${escHtml(s.gov_ref)}</div>` : ''}
+    ${s.userSubmitted && s.submittedBy ? `<div class="modal-source">Submitted by: ${escHtml(s.submittedBy)}</div>` : ''}
+    <div class="modal-actions">
+      <button class="btn-map" onclick="flyToOnMap(${s.lat},${s.lng})">📍 Show on Map</button>
+      <button class="btn-map" onclick="shareModal('${escHtml(s.title)}')">🔗 Share</button>
+    </div>
+  `;
+
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function buildVideoHtml(videos) {
+  if (!videos.length) return '';
+  const items = videos.map(url => {
+    url = url.trim();
+    const embed = toEmbedUrl(url);
+    return embed
+      ? `<iframe class="video-embed" src="${escHtml(embed)}" allowfullscreen loading="lazy"></iframe>`
+      : `<a class="video-link" href="${escHtml(url)}" target="_blank" rel="noopener noreferrer">▶ ${escHtml(url)}</a>`;
+  }).join('');
+  return `<div class="modal-videos"><h3>Video Evidence</h3>${items}</div>`;
+}
+
+function toEmbedUrl(url) {
+  try {
+    if (url.includes('youtube.com/embed/') || url.includes('player.vimeo.com')) return url;
+    const yt = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([A-Za-z0-9_-]{11})/);
+    if (yt) return `https://www.youtube.com/embed/${yt[1]}`;
+    if (url.includes('rumble.com/embed/')) return url;
+    const vm = url.match(/vimeo\.com\/(\d+)/);
+    if (vm) return `https://player.vimeo.com/video/${vm[1]}`;
+  } catch (e) {}
+  return null;
+}
+
+function closeModal() { document.getElementById('modal-overlay').classList.remove('open'); }
+
+function flyToOnMap(lat, lng) {
+  closeModal();
+  showPanel('map', document.querySelector('.snav[data-panel="map"]'));
+  setTimeout(() => map.flyTo([lat, lng], 7, { duration: 1.2 }), 100);
+}
+
+function shareModal(title) {
+  const url = window.location.href;
+  if (navigator.share) {
+    navigator.share({ title: 'PhenoMap: ' + title, url });
+  } else {
+    navigator.clipboard?.writeText(url);
+    alert('Link copied to clipboard!');
+  }
+}
+
+// ── SUBMIT ────────────────────────────────────────────────────
+function handleSubmit(e) {
+  e.preventDefault();
+
+  const title   = document.getElementById('sub-title').value.trim();
+  const city    = document.getElementById('sub-city').value.trim();
+  const state   = document.getElementById('sub-state').value.trim();
+  const country = document.getElementById('sub-country').value.trim();
+  const lat     = parseFloat(document.getElementById('sub-lat').value) || geoGuess(city);
+  const lng     = parseFloat(document.getElementById('sub-lng').value) || geoGuessLng(city);
+  const date    = document.getElementById('sub-date').value;
+  const desc    = document.getElementById('sub-desc').value.trim();
+  const shape   = document.getElementById('sub-shape').value;
+  const dur     = document.getElementById('sub-duration').value.trim();
+  const video   = document.getElementById('sub-video').value.trim();
+  const wit     = document.getElementById('sub-witnesses').value || '1';
+  const name    = document.getElementById('sub-name').value.trim() || 'Anonymous';
+  const anon    = document.getElementById('sub-anon').checked;
+  const src     = document.getElementById('sub-source').value.trim();
+
+  const location = [city, state, country].filter(Boolean).join(', ');
+  const videos = video ? video.split(',').map(v => v.trim()).filter(Boolean) : [];
+
+  const newSighting = {
+    uid: Date.now(), title, location, lat, lng, date,
+    source: 'civilian', status: 'pending',
+    description: desc, shape, duration: dur, videos,
+    witnesses: parseInt(wit),
+    gov_ref: src,
+    submittedBy: anon ? 'Anonymous' : name,
+    userSubmitted: true
+  };
+
+  userSightings.push(newSighting);
+  saveUserSightings();
+  buildMarkers();
+  updateSidebarStats();
+  initTimeline();
+
+  document.getElementById('submit-form').reset();
+  const succ = document.getElementById('submit-success');
+  succ.style.display = 'block';
+  setTimeout(() => succ.style.display = 'none', 8000);
 }
 
 // ── SETTINGS ─────────────────────────────────────────────────
 function loadSettings() {
   try {
-    const s = localStorage.getItem('dockledger_settings');
+    const s = localStorage.getItem('phenomap_settings');
     settings = s ? JSON.parse(s) : {};
   } catch (e) { settings = {}; }
 }
 
 function saveSettings() {
   settings = {
-    darkMode: document.getElementById('s-darkmode')?.checked,
-    units: document.getElementById('s-units')?.value,
-    currency: document.getElementById('s-currency')?.value,
+    darkMode:      document.getElementById('s-darkmode')?.checked,
+    cluster:       document.getElementById('s-cluster')?.checked,
+    timeline:      document.getElementById('s-timeline')?.checked,
+    nearbyAlert:   document.getElementById('s-nearby')?.checked,
+    verifiedAlert: document.getElementById('s-verified-alert')?.checked,
+    nuforc:        document.getElementById('s-nuforc')?.checked,
+    mufon:         document.getElementById('s-mufon')?.checked,
+    community:     document.getElementById('s-community')?.checked,
+    govOnly:       document.getElementById('s-govonly')?.checked,
+    anon:          document.getElementById('s-anon')?.checked,
   };
-  try { localStorage.setItem('dockledger_settings', JSON.stringify(settings)); } catch (e) {}
+  try { localStorage.setItem('phenomap_settings', JSON.stringify(settings)); } catch (e) {}
 }
 
 function toggleDarkMode(cb) {
-  document.body.classList.toggle('dark-mode', cb.checked);
+  document.body.style.filter = cb.checked ? '' : 'invert(0.85) hue-rotate(180deg)';
+  saveSettings();
+}
+
+function toggleClustering(cb) {
+  if (cb.checked) map.addLayer(markerCluster);
+  else map.removeLayer(markerCluster);
+  saveSettings();
+}
+
+function toggleTimeline(cb) {
+  document.getElementById('timeline-bar').style.display = cb.checked ? '' : 'none';
   saveSettings();
 }
 
 // ── EXPORT ────────────────────────────────────────────────────
-function exportExpensesCSV() {
-  const rows = [['Date', 'Category', 'Description', 'Amount', 'Notes'], 
-    ...expenses.map(e => [e.date, e.category, e.description, e.amount, e.notes || ''])];
-  const csv = rows.map(r => r.join(',')).join('\n');
-  download('dockledger-expenses.csv', csv, 'text/csv');
+function exportCSV() {
+  const all = [...SIGHTINGS, ...userSightings];
+  const cols = ['id','title','location','lat','lng','date','source','status','shape','duration','description','gov_ref'];
+  const rows = [cols.join(','), ...all.map(s => cols.map(c => JSON.stringify(s[c] ?? '')).join(','))];
+  download('phenomap-sightings.csv', rows.join('\n'), 'text/csv');
 }
 
-function exportMaintenanceJSON() {
-  download('dockledger-maintenance.json', JSON.stringify(maintenanceTasks, null, 2), 'application/json');
+function exportJSON() {
+  download('phenomap-sightings.json', JSON.stringify([...SIGHTINGS, ...userSightings], null, 2), 'application/json');
 }
 
 function download(filename, content, type) {
@@ -425,7 +562,7 @@ function download(filename, content, type) {
 
 // ── PAYWALL ───────────────────────────────────────────────────
 function checkPremium() {
-  isPremium = localStorage.getItem('dockledger_premium') === 'true';
+  isPremium = localStorage.getItem('phenomap_premium') === 'true';
 }
 
 function showPaywall() {
@@ -438,62 +575,48 @@ function closePaywall() {
 
 function showPaywallDelayed() {
   if (isPremium) return;
-  setTimeout(showPaywall, 3000);
+  setTimeout(showPaywall, 2500);
 }
 
 function openStripe() {
-  window.open(STRIPE_URL, '_blank');
+  window.open(STRIPE_URL, '_blank', 'noopener,noreferrer');
 }
 
 function activatePremium() {
   isPremium = true;
-  localStorage.setItem('dockledger_premium', 'true');
+  localStorage.setItem('phenomap_premium', 'true');
   closePaywall();
-  showToast('Premium activated!');
+}
+
+// ── ALERTS ────────────────────────────────────────────────────
+function showRandomAlert() {
+  const msgs = [
+    'New sighting reported near Phoenix, AZ',
+    'Gov sighting verified: USS Nimitz 2004',
+    'New video submitted from Texas',
+    'AARO released 3 new cases',
+    'Sighting cluster detected over Pacific'
+  ];
+  setTimeout(() => {
+    const banner = document.getElementById('alert-banner');
+    const text = document.getElementById('alert-text');
+    if (banner && text) {
+      text.textContent = msgs[Math.floor(Math.random() * msgs.length)];
+      banner.style.display = 'flex';
+      setTimeout(() => banner.style.display = 'none', 6000);
+    }
+  }, 5000);
 }
 
 // ── HELPERS ───────────────────────────────────────────────────
-function populateFilters() {
-  // Populate expense categories
-  const expCat = document.getElementById('expense-category');
-  const expCatFilter = document.getElementById('expense-category-filter');
-  EXPENSE_CATEGORIES.forEach(c => {
-    if (expCat) {
-      const opt = document.createElement('option');
-      opt.value = c; opt.textContent = c;
-      expCat.appendChild(opt);
-    }
-    if (expCatFilter) {
-      const opt = document.createElement('option');
-      opt.value = c; opt.textContent = c;
-      expCatFilter.appendChild(opt);
-    }
-  });
-
-  // Populate maintenance categories
-  const mtnCat = document.getElementById('task-category');
-  const mtnStatus = document.getElementById('task-status');
-  const mtnFilter = document.getElementById('maintenance-status-filter');
-  
-  MAINTENANCE_CATEGORIES.forEach(c => {
-    if (mtnCat) {
-      const opt = document.createElement('option');
-      opt.value = c; opt.textContent = c;
-      mtnCat.appendChild(opt);
-    }
-  });
-
-  MAINTENANCE_STATUS.forEach(s => {
-    if (mtnStatus) {
-      const opt = document.createElement('option');
-      opt.value = s; opt.textContent = s;
-      mtnStatus.appendChild(opt);
-    }
-    if (mtnFilter) {
-      const opt = document.createElement('option');
-      opt.value = s; opt.textContent = s;
-      mtnFilter.appendChild(opt);
-    }
+function populateYearFilter() {
+  const years = [...new Set([...SIGHTINGS,...userSightings].map(s => s.date?.split('-')[0]).filter(Boolean))].sort().reverse();
+  const sel = document.getElementById('filter-year');
+  if (!sel) return;
+  years.forEach(y => {
+    const o = document.createElement('option');
+    o.value = y; o.textContent = y;
+    sel.appendChild(o);
   });
 }
 
@@ -503,49 +626,45 @@ function escHtml(str) {
 }
 
 function formatDate(d) {
-  if (!d) return 'N/A';
+  if (!d) return 'Unknown';
   try {
     const [y, m, day] = d.split('-');
     const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    return `${months[parseInt(m,10)-1] || ''} ${day}, ${y}`;
+    return `${day ? day + ' ' : ''}${months[parseInt(m,10)-1] || ''} ${y}`.trim();
   } catch (e) { return d; }
 }
 
-function showToast(msg) {
-  const toast = document.getElementById('toast');
-  if (toast) {
-    toast.textContent = msg;
-    toast.classList.add('show');
-    setTimeout(() => toast.classList.remove('show'), 3000);
-  }
+function sourceLabel(src) {
+  return { gov:'US Gov', mil:'Military', civilian:'Civilian', aaro:'AARO' }[src] || src;
 }
 
-// ── LOCAL STORAGE ─────────────────────────────────────────────
-function saveExpenses() {
-  try { localStorage.setItem('dockledger_expenses', JSON.stringify(expenses)); } catch (e) {}
+function geoGuess(city) {
+  const m = { 'phoenix':33.4484,'new york':40.7128,'los angeles':34.0522,'chicago':41.8781,
+    'houston':29.7604,'dallas':32.7767,'miami':25.7617,'seattle':47.6062,
+    'denver':39.7392,'atlanta':33.749,'las vegas':36.1699,'washington':38.9072,
+    'london':51.5074,'paris':48.8566,'tokyo':35.6762,'sydney':-33.8688 };
+  const l = (city||'').toLowerCase();
+  for (const [k, v] of Object.entries(m)) if (l.includes(k)) return v;
+  return 0;
 }
 
-function loadExpenses() {
+function geoGuessLng(city) {
+  const m = { 'phoenix':-112.074,'new york':-74.006,'los angeles':-118.2437,'chicago':-87.6298,
+    'houston':-95.3698,'dallas':-96.797,'miami':-80.1918,'seattle':-122.3321,
+    'denver':-104.9903,'atlanta':-84.388,'las vegas':-115.1398,'washington':-77.0369,
+    'london':-0.1278,'paris':2.3522,'tokyo':139.6503,'sydney':151.2093 };
+  const l = (city||'').toLowerCase();
+  for (const [k, v] of Object.entries(m)) if (l.includes(k)) return v;
+  return 0;
+}
+
+function saveUserSightings() {
+  try { localStorage.setItem('phenomap_user_sightings', JSON.stringify(userSightings)); } catch (e) {}
+}
+
+function loadUserSightings() {
   try {
-    const raw = localStorage.getItem('dockledger_expenses');
-    if (raw) expenses = JSON.parse(raw);
-  } catch (e) { expenses = []; }
-}
-
-function saveMaintenance() {
-  try { localStorage.setItem('dockledger_maintenance', JSON.stringify(maintenanceTasks)); } catch (e) {}
-}
-
-function loadMaintenance() {
-  try {
-    const raw = localStorage.getItem('dockledger_maintenance');
-    if (raw) maintenanceTasks = JSON.parse(raw);
-  } catch (e) { maintenanceTasks = []; }
-}
-
-function loadBoats() {
-  try {
-    const raw = localStorage.getItem('dockledger_boats');
-    if (raw) userBoats = JSON.parse(raw);
-  } catch (e) { userBoats = []; }
+    const raw = localStorage.getItem('phenomap_user_sightings');
+    if (raw) userSightings = JSON.parse(raw);
+  } catch (e) { userSightings = []; }
 }
