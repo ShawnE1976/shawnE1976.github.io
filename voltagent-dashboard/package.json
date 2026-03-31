@@ -1,0 +1,20 @@
+{
+  "name": "voltagent-dashboard",
+  "version": "1.0.0",
+  "description": "Multi-agent orchestration dashboard powered by VoltAgent + Claude",
+  "type": "module",
+  "scripts": {
+    "dev": "node server.js",
+    "start": "node server.js",
+    "setup": "npm install && cp -n .env.example .env 2>/dev/null; echo 'Done! Edit .env with your ANTHROPIC_API_KEY then run: npm run dev'"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0",
+    "express": "^4.21.0",
+    "uuid": "^11.1.0",
+    "ws": "^8.18.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AgentHub — Multi-Agent Orchestrator</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="logo">
+      <span class="logo-icon">&#9881;</span>
+      <div class="logo-text">
+        <span class="logo-title">AgentHub</span>
+        <span class="logo-subtitle">Multi-Agent Orchestrator</span>
+      </div>
+    </div>
+    <div class="header-actions">
+      <span class="shortcut-hint">Press <kbd>?</kbd> for shortcuts</span>
+      <button class="btn" onclick="var p=document.getElementById('logs-panel');p.style.display=p.style.display==='none'?'':'none'">Toggle Logs</button>
+      <button class="btn btn-primary" onclick="document.getElementById('new-task-modal').classList.add('active');document.getElementById('task-name').focus()">+ New Task</button>
+    </div>
+  </div>
+</header>
+
+<div class="main">
+
+  <!-- Stats Row -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <span class="stat-icon stat-icon-blue">&#9881;</span>
+      <div class="stat-info">
+        <span class="stat-value" id="stat-total">0</span>
+        <span class="stat-label">Total Agents</span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <span class="stat-icon stat-icon-green">&#9654;</span>
+      <div class="stat-info">
+        <span class="stat-value" id="stat-running">0</span>
+        <span class="stat-label">Running</span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <span class="stat-icon stat-icon-yellow">&#9201;</span>
+      <div class="stat-info">
+        <span class="stat-value" id="stat-queued">0</span>
+        <span class="stat-label">Queued</span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <span class="stat-icon stat-icon-green">&#10003;</span>
+      <div class="stat-info">
+        <span class="stat-value" id="stat-completed">0</span>
+        <span class="stat-label">Completed</span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <span class="stat-icon stat-icon-red">&#9888;</span>
+      <div class="stat-info">
+        <span class="stat-value" id="stat-failed">0</span>
+        <span class="stat-label">Failed</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Agent Timeline -->
+  <div class="panel">
+    <div class="panel-header">
+      <h2 class="panel-title">Agent Timeline</h2>
+      <span class="panel-label">Real-time progress</span>
+    </div>
+    <div class="panel-body" style="max-height:none;">
+      <div id="timeline-container"></div>
+    </div>
+  </div>
+
+  <!-- Dashboard Grid -->
+  <div class="dashboard-grid">
+
+    <!-- Left Column -->
+    <div class="dashboard-col">
+
+      <div class="panel">
+        <div class="panel-header">
+          <h2 class="panel-title">Active Agents</h2>
+          <div class="panel-actions">
+            <select id="spawn-type" class="input" style="width:110px;padding:0.2rem 0.4rem;font-size:0.75rem;">
+              <option value="builder">Builder</option>
+              <option value="researcher">Researcher</option>
+              <option value="tester">Tester</option>
+              <option value="reviewer">Reviewer</option>
+              <option value="debugger">Debugger</option>
+            </select>
+            <button class="btn btn-primary btn-sm" onclick="Hub.spawnAgent(document.getElementById('spawn-type').value)">+ Spawn</button>
+          </div>
+        </div>
+        <div class="panel-body" id="agents-container">
+          <div class="empty-state">No agents. Click "+ Spawn" to begin.</div>
+        </div>
+      </div>
+
+      <div class="panel" id="logs-panel">
+        <div class="panel-header">
+          <h2 class="panel-title">Live Execution Log</h2>
+          <div class="panel-actions">
+            <input type="text" id="log-search" class="input" placeholder="Filter logs..." style="width:160px;">
+            <button class="btn btn-sm" onclick="Hub.exportLogs()">Export</button>
+            <button class="btn btn-sm" onclick="Hub.clearLogs()">Clear</button>
+          </div>
+        </div>
+        <div class="panel-body" style="padding:0.6rem;">
+          <div id="log-stream" class="log-stream"></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Right Column -->
+    <div class="dashboard-col">
+
+      <div class="panel">
+        <div class="panel-header">
+          <h2 class="panel-title">Quick Templates</h2>
+        </div>
+        <div class="panel-body" id="templates-container"></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">
+          <h2 class="panel-title">Task Queue</h2>
+          <span id="queue-count" class="badge">0 pending</span>
+        </div>
+        <div class="panel-body" id="task-queue"></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">
+          <h2 class="panel-title">Server Config</h2>
+          <span class="badge badge-green" id="connection-badge">CONNECTING</span>
+        </div>
+        <div class="panel-body">
+          <div class="config-section">
+            <h3 class="config-section-title">Orchestration</h3>
+            <div class="config-grid">
+              <div class="config-item"><span class="config-label">Mode</span><span class="config-value">supervisor</span></div>
+              <div class="config-item"><span class="config-label">Max Parallel</span><span class="config-value">5</span></div>
+              <div class="config-item"><span class="config-label">Timeout</span><span class="config-value">30min</span></div>
+              <div class="config-item"><span class="config-label">Auto-assign</span><label class="toggle"><input type="checkbox" checked><span class="toggle-slider"></span></label></div>
+            </div>
+          </div>
+          <div class="config-section">
+            <h3 class="config-section-title">Claude API</h3>
+            <div class="config-grid">
+              <div class="config-item"><span class="config-label">Model</span><span class="config-value">claude-sonnet-4-6</span></div>
+              <div class="config-item"><span class="config-label">Fallback</span><span class="config-value">claude-haiku-4-5</span></div>
+              <div class="config-item"><span class="config-label">Connection</span><span class="config-value">WebSocket</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- New Task Modal -->
+<div id="new-task-modal" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 class="modal-title">Create New Task</h2>
+      <button class="modal-close" onclick="this.closest('.modal-overlay').classList.remove('active')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Task Name</label>
+        <input type="text" id="task-name" class="input" placeholder="e.g., Build authentication module">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Description</label>
+        <textarea id="task-desc" class="input textarea" placeholder="Describe what the agent should accomplish..."></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Agent Type</label>
+        <select id="task-agent-type" class="input">
+          <option value="builder">Builder</option>
+          <option value="researcher">Researcher</option>
+          <option value="tester">Tester</option>
+          <option value="reviewer">Reviewer</option>
+          <option value="debugger">Debugger</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Priority</label>
+        <select id="task-priority" class="input">
+          <option value="high">High</option>
+          <option value="medium" selected>Medium</option>
+          <option value="low">Low</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="this.closest('.modal-overlay').classList.remove('active')">Cancel</button>
+      <button class="btn btn-primary" onclick="Hub.createTask()">Create & Queue</button>
+    </div>
+  </div>
+</div>
+
+<!-- Agent Detail Modal -->
+<div id="agent-detail-modal" class="modal-overlay">
+  <div class="modal modal-large">
+    <div class="modal-header">
+      <div class="modal-header-info">
+        <span id="detail-agent-name" class="modal-title"></span>
+        <span id="detail-agent-type" class="agent-type-badge"></span>
+        <span id="detail-agent-status" class="status-badge"></span>
+      </div>
+      <button class="modal-close" onclick="Hub.closeDetail()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="detail-metrics">
+        <div class="detail-metric-card"><span class="detail-metric-label">Progress</span><span class="detail-metric-value" id="detail-progress">0%</span></div>
+        <div class="detail-metric-card"><span class="detail-metric-label">Tokens</span><span class="detail-metric-value" id="detail-tokens">0</span></div>
+        <div class="detail-metric-card"><span class="detail-metric-label">Cost</span><span class="detail-metric-value" id="detail-cost">$0.00</span></div>
+        <div class="detail-metric-card"><span class="detail-metric-label">Tasks Done</span><span class="detail-metric-value" id="detail-completed">0</span></div>
+      </div>
+      <div class="tab-bar">
+        <button id="detail-tab-logs" class="tab active">Logs</button>
+        <button id="detail-tab-perf" class="tab">Performance</button>
+      </div>
+      <div id="detail-logs" class="log-stream"></div>
+      <div id="detail-perf-content" class="tab-content" style="display:none"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-warn" onclick="Hub.pauseAgent(Hub.getState().agents.find(a=>document.getElementById('detail-agent-name')?.textContent===a.name)?.id)">Pause</button>
+      <button class="btn btn-danger" onclick="Hub.removeAgent(Hub.getState().agents.find(a=>document.getElementById('detail-agent-name')?.textContent===a.name)?.id)">Remove</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast Container -->
+<div id="toast-container" style="position:fixed;top:1rem;right:1rem;z-index:11000;display:flex;flex-direction:column;gap:0.5rem;"></div>
+
+<!-- Keyboard Shortcuts Modal -->
+<div id="shortcuts-modal" class="modal-overlay">
+  <div class="modal modal-small">
+    <div class="modal-header">
+      <h2 class="modal-title">Keyboard Shortcuts</h2>
+      <button class="modal-close" onclick="document.getElementById('shortcuts-modal').classList.remove('active')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="shortcut-list">
+        <div class="shortcut-item"><kbd>N</kbd><span>New Task</span></div>
+        <div class="shortcut-item"><kbd>S</kbd><span>Spawn Agent</span></div>
+        <div class="shortcut-item"><kbd>L</kbd><span>Toggle Logs</span></div>
+        <div class="shortcut-item"><kbd>/</kbd><span>Search Logs</span></div>
+        <div class="shortcut-item"><kbd>Esc</kbd><span>Close Modal</span></div>
+        <div class="shortcut-item"><kbd>?</kbd><span>This Help</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+
+</body>
+</html>
