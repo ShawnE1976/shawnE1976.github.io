@@ -2,8 +2,29 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>DockLedger — The Liveaboard Companion</title>
+  <meta name="description" content="The expense tracker built for liveaboards. Find marinas, track slip fees, maintenance, provisioning, and everything in between." />
+  <meta name="keywords" content="liveaboard, marina, boat expenses, slip fees, maintenance log, cruising, sailing, boating app" />
+  <meta name="author" content="DockLedger" />
+
+  <!-- Open Graph / Social -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="DockLedger — The Liveaboard Companion" />
+  <meta property="og:description" content="Find marinas, track expenses, log maintenance. The all-in-one app for life on the water." />
+  <meta property="og:image" content="thumbnail.svg" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="DockLedger — The Liveaboard Companion" />
+  <meta name="twitter:description" content="Find marinas, track expenses, log maintenance. The all-in-one app for life on the water." />
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#2196f3" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="DockLedger" />
+
+  <!-- Styles -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
@@ -11,48 +32,132 @@
 </head>
 <body>
 
-  <!-- ====== LOGIN SCREEN ====== -->
-  <div id="login-screen" class="login-screen">
-    <div class="login-card">
-      <div class="login-logo">
-        <svg class="login-logo-icon" viewBox="0 0 48 48" width="44" height="44">
-          <rect x="4" y="8" width="40" height="32" rx="6" fill="#1a6fb5"/>
-          <path d="M24 12 L24 30 M18 28 Q24 22 30 28" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-          <path d="M24 12 L32 24 L24 24 Z" fill="#e2e8f0" opacity="0.9"/>
-          <path d="M8 34 Q16 28 24 34 Q32 28 40 34" stroke="#4fc3f7" stroke-width="2" fill="none"/>
-        </svg>
-        <span class="login-logo-text">DockLedger</span>
+  <!-- ====== LANDING PAGE (for non-logged-in visitors) ====== -->
+  <div id="landing-page" class="landing-page">
+    <div class="landing-content">
+      <div class="landing-hero-section">
+        <div class="login-logo">
+          <svg class="login-logo-icon" viewBox="0 0 48 48" width="48" height="48">
+            <rect x="4" y="8" width="40" height="32" rx="6" fill="#1a6fb5"/>
+            <path d="M24 12 L24 30 M18 28 Q24 22 30 28" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+            <path d="M24 12 L32 24 L24 24 Z" fill="#e2e8f0" opacity="0.9"/>
+            <path d="M8 34 Q16 28 24 34 Q32 28 40 34" stroke="#4fc3f7" stroke-width="2" fill="none"/>
+          </svg>
+          <span class="login-logo-text">DockLedger</span>
+        </div>
+
+        <div class="login-hero">
+          <svg viewBox="0 0 400 240" class="sailboat-svg">
+            <circle cx="60" cy="30" r="1.5" fill="#4fc3f7" opacity="0.6"/>
+            <circle cx="140" cy="18" r="1" fill="#4fc3f7" opacity="0.4"/>
+            <circle cx="250" cy="35" r="1.5" fill="#4fc3f7" opacity="0.5"/>
+            <circle cx="320" cy="22" r="1" fill="#4fc3f7" opacity="0.3"/>
+            <circle cx="90" cy="50" r="1" fill="#4fc3f7" opacity="0.3"/>
+            <circle cx="340" cy="55" r="1.5" fill="#4fc3f7" opacity="0.4"/>
+            <path d="M160 170 Q200 185 240 170 L235 155 Q200 165 165 155 Z" fill="#c8842a"/>
+            <rect x="185" y="155" width="6" height="4" rx="1" fill="#5ba3d9" opacity="0.7"/>
+            <rect x="209" y="155" width="6" height="4" rx="1" fill="#5ba3d9" opacity="0.7"/>
+            <line x1="200" y1="70" x2="200" y2="170" stroke="#e8d5b0" stroke-width="2.5"/>
+            <path d="M200 70 L240 150 L200 150 Z" fill="#e2e8f0" opacity="0.85"/>
+            <path d="M200 80 L170 150 L200 150 Z" fill="#cdd5de" opacity="0.6"/>
+            <rect x="0" y="175" width="400" height="65" fill="#0d2847"/>
+            <path d="M0 180 Q50 170 100 180 Q150 190 200 180 Q250 170 300 180 Q350 190 400 180 L400 240 L0 240 Z" fill="#0f3460" opacity="0.7"/>
+            <path d="M0 195 Q60 185 120 195 Q180 205 240 195 Q300 185 360 195 Q390 200 400 195 L400 240 L0 240 Z" fill="#0a2540" opacity="0.5"/>
+          </svg>
+        </div>
+
+        <p class="login-tagline">The expense tracker built for liveaboards. Track your slip fees, maintenance, provisioning, and everything in between.</p>
+
+        <div class="login-features">
+          <span class="feature-chip">⚓ Slip &amp; Dock Fees</span>
+          <span class="feature-chip">🔧 Maintenance</span>
+          <span class="feature-chip">⛵ Rigging</span>
+        </div>
       </div>
 
-      <div class="login-hero">
-        <svg viewBox="0 0 400 240" class="sailboat-svg">
-          <circle cx="60" cy="30" r="1.5" fill="#4fc3f7" opacity="0.6"/>
-          <circle cx="140" cy="18" r="1" fill="#4fc3f7" opacity="0.4"/>
-          <circle cx="250" cy="35" r="1.5" fill="#4fc3f7" opacity="0.5"/>
-          <circle cx="320" cy="22" r="1" fill="#4fc3f7" opacity="0.3"/>
-          <circle cx="90" cy="50" r="1" fill="#4fc3f7" opacity="0.3"/>
-          <circle cx="340" cy="55" r="1.5" fill="#4fc3f7" opacity="0.4"/>
-          <path d="M160 170 Q200 185 240 170 L235 155 Q200 165 165 155 Z" fill="#c8842a"/>
-          <rect x="185" y="155" width="6" height="4" rx="1" fill="#5ba3d9" opacity="0.7"/>
-          <rect x="209" y="155" width="6" height="4" rx="1" fill="#5ba3d9" opacity="0.7"/>
-          <line x1="200" y1="70" x2="200" y2="170" stroke="#e8d5b0" stroke-width="2.5"/>
-          <path d="M200 70 L240 150 L200 150 Z" fill="#e2e8f0" opacity="0.85"/>
-          <path d="M200 80 L170 150 L200 150 Z" fill="#cdd5de" opacity="0.6"/>
-          <rect x="0" y="175" width="400" height="65" fill="#0d2847"/>
-          <path d="M0 180 Q50 170 100 180 Q150 190 200 180 Q250 170 300 180 Q350 190 400 180 L400 240 L0 240 Z" fill="#0f3460" opacity="0.7"/>
-          <path d="M0 195 Q60 185 120 195 Q180 205 240 195 Q300 185 360 195 Q390 200 400 195 L400 240 L0 240 Z" fill="#0a2540" opacity="0.5"/>
-        </svg>
+      <!-- Feature Showcase -->
+      <div class="landing-features-grid">
+        <div class="landing-feature-card">
+          <div class="lf-icon">🗺️</div>
+          <h3>Find Marinas</h3>
+          <p>Search 80+ marinas across every coast. Filter by liveaboard-friendly, fuel docks, boatyards, and anchorages.</p>
+        </div>
+        <div class="landing-feature-card">
+          <div class="lf-icon">💰</div>
+          <h3>Track Expenses</h3>
+          <p>Log every dollar — slip fees, maintenance, provisioning, fuel, insurance. Monthly breakdowns show where your money goes.</p>
+        </div>
+        <div class="landing-feature-card">
+          <div class="lf-icon">🔧</div>
+          <h3>Maintenance Log</h3>
+          <p>Never forget an oil change or bottom job again. Track tasks by status: scheduled, in progress, completed.</p>
+        </div>
+        <div class="landing-feature-card">
+          <div class="lf-icon">📋</div>
+          <h3>Cruising Checklists</h3>
+          <p>Pre-departure, storm prep, winterization, annual maintenance — pre-built checklists for every situation.</p>
+        </div>
+        <div class="landing-feature-card">
+          <div class="lf-icon">⛽</div>
+          <h3>Fuel Calculator</h3>
+          <p>Plan your fuel budget before you leave the dock. Enter tank size, fuel price, and distance.</p>
+        </div>
+        <div class="landing-feature-card">
+          <div class="lf-icon">📍</div>
+          <h3>Near Me</h3>
+          <p>Find the closest marinas to your current location with one tap. GPS-powered, sorted by distance.</p>
+        </div>
       </div>
 
-      <p class="login-tagline">The expense tracker built for liveaboards. Track your slip fees, maintenance, provisioning, and everything in between.</p>
-
-      <div class="login-features">
-        <span class="feature-chip">⚓ Slip &amp; Dock Fees</span>
-        <span class="feature-chip">🔧 Maintenance</span>
-        <span class="feature-chip">⛵ Rigging</span>
+      <!-- Pricing Section -->
+      <div class="landing-pricing" id="pricing">
+        <h2>Simple Pricing</h2>
+        <p class="subtitle">Start free. Upgrade when you need more.</p>
+        <div class="pricing-cards">
+          <div class="pricing-card">
+            <h3>Free</h3>
+            <div class="pricing-amount">$0 <span>/forever</span></div>
+            <ul>
+              <li>View 10 marinas</li>
+              <li>5 expense entries</li>
+              <li>Basic maintenance log</li>
+              <li>1 checklist</li>
+            </ul>
+            <button class="pricing-btn pricing-btn-free" onclick="showLoginForm()">Get Started Free</button>
+          </div>
+          <div class="pricing-card featured">
+            <div class="premium-badge">Most Popular</div>
+            <h3>Premium Monthly</h3>
+            <div class="pricing-amount">$4.99 <span>/mo</span></div>
+            <ul>
+              <li>Unlimited marinas</li>
+              <li>Unlimited expenses</li>
+              <li>CSV export</li>
+              <li>All checklists</li>
+              <li>Weather data</li>
+              <li>Fuel calculator</li>
+              <li>GPS "Near Me"</li>
+              <li>Priority support</li>
+            </ul>
+            <button class="pricing-btn pricing-btn-premium" onclick="showLoginForm()">Start Free Trial</button>
+          </div>
+          <div class="pricing-card">
+            <div class="premium-badge save-badge">Save 33%</div>
+            <h3>Premium Yearly</h3>
+            <div class="pricing-amount">$39.99 <span>/yr</span></div>
+            <ul>
+              <li>Everything in Monthly</li>
+              <li>2 months free</li>
+              <li>Early access to new features</li>
+              <li>Lifetime price lock</li>
+            </ul>
+            <button class="pricing-btn pricing-btn-premium" onclick="showLoginForm()">Start Free Trial</button>
+          </div>
+        </div>
       </div>
 
-      <div class="login-form-section">
+      <!-- Login Form -->
+      <div class="login-form-section" id="login-section">
         <h2>Welcome back</h2>
         <p class="login-sub">Sign in to your DockLedger account</p>
         <form id="login-form" onsubmit="handleLogin(event)">
@@ -68,6 +173,10 @@
         </form>
         <p class="login-alt">Don't have an account? <a href="#" onclick="handleLogin(event)">Start free</a></p>
       </div>
+
+      <footer class="landing-footer">
+        <p>&copy; 2026 DockLedger. Built for life on the water.</p>
+      </footer>
     </div>
   </div>
 
@@ -83,25 +192,35 @@
             <path d="M16 8 L22 17 L16 17 Z" fill="#e2e8f0" opacity="0.9"/>
           </svg>
           <span class="logo-text">DockLedger</span>
+          <span class="premium-indicator" id="premium-indicator" style="display:none">PRO</span>
         </div>
         <nav>
           <button class="nav-btn active" id="btn-dashboard" onclick="showPanel('dashboard')">Dashboard</button>
           <button class="nav-btn" id="btn-map" onclick="showPanel('map')">Marinas</button>
           <button class="nav-btn" id="btn-expenses" onclick="showPanel('expenses')">Expenses</button>
           <button class="nav-btn" id="btn-maintenance" onclick="showPanel('maintenance')">Log</button>
+          <button class="nav-btn" id="btn-checklists" onclick="showPanel('checklists')">Checklists</button>
         </nav>
-        <div class="header-user" onclick="handleLogout()">
-          <span id="header-username">Captain</span>
-          <span class="avatar">⚓</span>
+        <div class="header-right">
+          <button class="icon-btn" onclick="showPanel('settings')" title="Settings">&#9881;</button>
+          <div class="header-user" onclick="handleLogout()">
+            <span id="header-username">Captain</span>
+            <span class="avatar">⚓</span>
+          </div>
         </div>
       </div>
     </header>
 
-    <!-- DASHBOARD -->
+    <!-- ====== DASHBOARD ====== -->
     <div id="panel-dashboard" class="panel active">
       <div class="panel-inner">
-        <h2>Welcome aboard, <span id="dash-username">Captain</span></h2>
-        <p class="subtitle">Here's your liveaboard overview.</p>
+        <div class="dash-header">
+          <div>
+            <h2>Welcome aboard, <span id="dash-username">Captain</span></h2>
+            <p class="subtitle">Here's your liveaboard overview.</p>
+          </div>
+          <button class="upgrade-btn" id="dash-upgrade-btn" onclick="showPaywall()">Upgrade to Pro</button>
+        </div>
 
         <div class="stat-grid">
           <div class="stat-card">
@@ -128,7 +247,7 @@
               <span class="stat-sub">This month</span>
             </div>
           </div>
-          <div class="stat-card">
+          <div class="stat-card accent-card">
             <div class="stat-icon">⛵</div>
             <div class="stat-info">
               <span class="stat-label">Total Spend</span>
@@ -159,12 +278,13 @@
             <button class="action-btn" onclick="showPanel('expenses'); setTimeout(()=>document.getElementById('expense-amount').focus(),100)">+ Add Expense</button>
             <button class="action-btn" onclick="showPanel('maintenance'); setTimeout(()=>document.getElementById('maint-title').focus(),100)">+ Log Maintenance</button>
             <button class="action-btn" onclick="showPanel('map')">Find Marina</button>
+            <button class="action-btn" onclick="showPanel('checklists')">Checklists</button>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- MARINA MAP -->
+    <!-- ====== MARINA MAP ====== -->
     <div id="panel-map" class="panel">
       <div id="map"></div>
       <div id="map-controls">
@@ -185,8 +305,10 @@
             <option value="west-coast">West Coast</option>
             <option value="gulf">Gulf Coast</option>
             <option value="great-lakes">Great Lakes</option>
+            <option value="pacific-nw">Pacific NW</option>
             <option value="caribbean">Caribbean</option>
           </select>
+          <button class="near-me-btn" onclick="findNearMe()" title="Find marinas near me">📍 Near Me</button>
           <span id="marina-count" class="count-badge">0 marinas</span>
         </div>
       </div>
@@ -199,10 +321,13 @@
       </div>
     </div>
 
-    <!-- EXPENSES -->
+    <!-- ====== EXPENSES ====== -->
     <div id="panel-expenses" class="panel">
       <div class="panel-inner">
-        <h2>Expense Tracker</h2>
+        <div class="panel-header-row">
+          <h2>Expense Tracker</h2>
+          <button class="export-btn" onclick="exportCSV()" title="Export to CSV">📥 Export CSV</button>
+        </div>
         <p class="subtitle">Track every dollar you spend on the water.</p>
 
         <form id="expense-form" onsubmit="addExpense(event)">
@@ -244,19 +369,44 @@
           <button type="submit" class="btn-primary">Add Expense</button>
         </form>
 
+        <!-- Fuel Calculator -->
+        <div class="fuel-calc-section">
+          <h3>⛽ Fuel Cost Calculator</h3>
+          <div class="fuel-calc-grid">
+            <div class="form-group">
+              <label>Tank Size (gal)</label>
+              <input type="number" id="fuel-tank" step="1" min="0" placeholder="100" />
+            </div>
+            <div class="form-group">
+              <label>Fuel Price ($/gal)</label>
+              <input type="number" id="fuel-price" step="0.01" min="0" placeholder="5.50" />
+            </div>
+            <div class="form-group">
+              <label>GPH (burn rate)</label>
+              <input type="number" id="fuel-gph" step="0.1" min="0" placeholder="4.0" />
+            </div>
+            <div class="form-group">
+              <label>Hours to run</label>
+              <input type="number" id="fuel-hours" step="0.5" min="0" placeholder="8" />
+            </div>
+          </div>
+          <button class="btn-secondary" onclick="calcFuel()">Calculate</button>
+          <div id="fuel-result" class="fuel-result" style="display:none"></div>
+        </div>
+
         <div class="expense-summary" id="expense-summary">
           <h3>Monthly Breakdown</h3>
           <div class="breakdown-grid" id="breakdown-grid"></div>
         </div>
 
         <div class="expense-history">
-          <h3>All Expenses</h3>
+          <h3>All Expenses <span class="expense-count" id="expense-count"></span></h3>
           <div id="expense-list" class="expense-list"></div>
         </div>
       </div>
     </div>
 
-    <!-- MAINTENANCE LOG -->
+    <!-- ====== MAINTENANCE LOG ====== -->
     <div id="panel-maintenance" class="panel">
       <div class="panel-inner">
         <h2>Maintenance Log</h2>
@@ -316,7 +466,111 @@
       </div>
     </div>
 
-    <!-- MARINA DETAIL MODAL -->
+    <!-- ====== CHECKLISTS ====== -->
+    <div id="panel-checklists" class="panel">
+      <div class="panel-inner">
+        <h2>Cruising Checklists</h2>
+        <p class="subtitle">Pre-built checklists for every situation on the water.</p>
+
+        <div class="checklist-selector" id="checklist-selector"></div>
+
+        <div class="checklist-active" id="checklist-active">
+          <p class="empty-state">Select a checklist above to get started.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====== SETTINGS ====== -->
+    <div id="panel-settings" class="panel">
+      <div class="panel-inner">
+        <h2>Settings</h2>
+        <p class="subtitle">Configure your DockLedger experience.</p>
+
+        <div class="settings-section">
+          <h3>Account</h3>
+          <div class="settings-card">
+            <div class="settings-row">
+              <span>Username</span>
+              <span id="settings-username" class="text-muted">-</span>
+            </div>
+            <div class="settings-row">
+              <span>Plan</span>
+              <span id="settings-plan" class="text-muted">Free</span>
+            </div>
+            <button class="upgrade-btn" id="settings-upgrade-btn" onclick="showPaywall()">Upgrade to Premium</button>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <h3>Weather API Key <span class="text-muted">(optional)</span></h3>
+          <p class="text-muted" style="font-size:0.82rem;margin-bottom:0.75rem;">
+            Get a free API key from OpenWeatherMap to see weather data on marina pages.
+          </p>
+          <div class="settings-card">
+            <div class="form-field">
+              <label>OpenWeatherMap API Key</label>
+              <input type="text" id="weather-api-key" placeholder="Enter your API key" />
+            </div>
+            <button class="btn-secondary" onclick="saveWeatherKey()">Save Key</button>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <h3>Data Management</h3>
+          <div class="settings-card">
+            <button class="btn-secondary" onclick="exportCSV()">📥 Export Expenses (CSV)</button>
+            <button class="btn-danger" onclick="clearAllData()">🗑️ Clear All Local Data</button>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <span class="text-muted" style="font-size:0.75rem;">DockLedger v1.0 &middot; Built for life on the water.</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====== PAYWALL OVERLAY ====== -->
+    <div id="paywall-overlay" class="paywall-overlay">
+      <div class="paywall-box">
+        <button class="paywall-close" onclick="closePaywall()">&times;</button>
+        <div class="pw-icon">⛵</div>
+        <h2>Upgrade to DockLedger Pro</h2>
+        <p>Unlock the full liveaboard toolkit — unlimited marinas, expense exports, weather, fuel calculator, and all checklists.</p>
+        <div class="pw-plans">
+          <div class="pw-plan">
+            <h3>Monthly</h3>
+            <div class="pw-price">$4.99 <span>/mo</span></div>
+            <ul>
+              <li>Unlimited everything</li>
+              <li>CSV export</li>
+              <li>Weather data</li>
+              <li>Fuel calculator</li>
+              <li>All checklists</li>
+              <li>GPS "Near Me"</li>
+            </ul>
+            <button class="pw-btn pw-btn-premium" onclick="openStripe('monthly')">Subscribe Monthly</button>
+          </div>
+          <div class="pw-plan featured">
+            <div class="pw-badge">Best Value</div>
+            <h3>Yearly</h3>
+            <div class="pw-price">$39.99 <span>/yr</span></div>
+            <ul>
+              <li>Everything in Monthly</li>
+              <li>2 months free</li>
+              <li>Price locked forever</li>
+              <li>Early feature access</li>
+            </ul>
+            <button class="pw-btn pw-btn-premium" onclick="openStripe('yearly')">Subscribe Yearly</button>
+          </div>
+        </div>
+        <div class="pw-restore">
+          Already subscribed? <a href="#" onclick="restorePremium(event)">Restore purchase</a>
+        </div>
+        <div class="pw-dismiss" onclick="closePaywall()">Continue with free plan</div>
+      </div>
+    </div>
+
+    <!-- ====== MARINA DETAIL MODAL ====== -->
     <div id="modal-overlay" class="modal-overlay" onclick="closeModal()">
       <div id="modal" class="modal" onclick="event.stopPropagation()">
         <button class="modal-close" onclick="closeModal()">&#10005;</button>
@@ -324,7 +578,10 @@
       </div>
     </div>
 
-  </div>
+    <!-- ====== TOAST ====== -->
+    <div id="toast" class="toast"></div>
+
+  </div><!-- end #app -->
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>

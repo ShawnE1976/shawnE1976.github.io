@@ -1,0 +1,23 @@
+{
+  "name": "DockLedger — The Liveaboard Companion",
+  "short_name": "DockLedger",
+  "description": "Find marinas, track expenses, log maintenance. The all-in-one app for life on the water.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0b1120",
+  "theme_color": "#2196f3",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "icon-192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "icon-512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml"
+    }
+  ],
+  "categories": ["lifestyle", "finance", "navigation"]
+}
