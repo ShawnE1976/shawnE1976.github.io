@@ -1,0 +1,381 @@
+<link rel="stylesheet" href="dashboard-styles.css">
+<script src="dashboard-app.js" defer></script>
+
+<header>
+  <div class="header-inner">
+    <div class="logo">
+      <span class="logo-icon">&#9881;</span>
+      <div class="logo-text">
+        <span class="logo-title">AgentHub</span>
+        <span class="logo-subtitle">Multi-Agent Orchestrator</span>
+      </div>
+    </div>
+    <div class="header-actions">
+      <a href="index.html" class="btn btn-link">&larr; Back</a>
+      <span class="shortcut-hint">Press <kbd>?</kbd> for shortcuts</span>
+      <button id="toggle-logs-btn" class="btn">Toggle Logs</button>
+      <button id="new-task-btn" class="btn btn-primary">+ New Task</button>
+    </div>
+  </div>
+</header>
+
+<div class="main">
+
+  <!-- Stats Row -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <span class="stat-icon stat-icon-blue">&#9881;</span>
+      <div class="stat-info">
+        <span class="stat-value" id="stat-total">0</span>
+        <span class="stat-label">Total Agents</span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <span class="stat-icon stat-icon-green">&#9654;</span>
+      <div class="stat-info">
+        <span class="stat-value" id="stat-running">0</span>
+        <span class="stat-label">Running</span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <span class="stat-icon stat-icon-yellow">&#9201;</span>
+      <div class="stat-info">
+        <span class="stat-value" id="stat-queued">0</span>
+        <span class="stat-label">Queued</span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <span class="stat-icon stat-icon-green">&#10003;</span>
+      <div class="stat-info">
+        <span class="stat-value" id="stat-completed">0</span>
+        <span class="stat-label">Completed Today</span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <span class="stat-icon stat-icon-red">&#9888;</span>
+      <div class="stat-info">
+        <span class="stat-value" id="stat-failed">0</span>
+        <span class="stat-label">Failed</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Agent Timeline Panel -->
+  <div class="panel">
+    <div class="panel-header">
+      <h2 class="panel-title">Agent Timeline</h2>
+      <span class="panel-label">Last 60 minutes</span>
+    </div>
+    <div class="panel-body">
+      <div id="timeline-container"></div>
+    </div>
+  </div>
+
+  <!-- Dashboard Grid -->
+  <div class="dashboard-grid">
+
+    <!-- Left Column -->
+    <div class="dashboard-col">
+
+      <!-- Active Agents Panel -->
+      <div class="panel">
+        <div class="panel-header">
+          <h2 class="panel-title">Active Agents</h2>
+          <button id="spawn-agent-btn" class="btn btn-primary">Spawn Agent</button>
+        </div>
+        <div class="panel-body">
+          <div id="agents-container"></div>
+        </div>
+      </div>
+
+      <!-- Live Execution Log Panel -->
+      <div class="panel" id="logs-panel">
+        <div class="panel-header">
+          <h2 class="panel-title">Live Execution Log</h2>
+          <div class="panel-actions">
+            <input type="text" id="log-search" class="input" placeholder="Filter logs...">
+            <button id="export-logs-btn" class="btn">Export</button>
+            <button id="clear-logs-btn" class="btn">Clear</button>
+          </div>
+        </div>
+        <div class="panel-body">
+          <div id="log-stream" class="log-stream"></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Right Column -->
+    <div class="dashboard-col">
+
+      <!-- Task Templates Panel -->
+      <div class="panel">
+        <div class="panel-header">
+          <h2 class="panel-title">Quick Templates</h2>
+        </div>
+        <div class="panel-body">
+          <div id="templates-container">
+            <div class="template-card" data-template="full-app-build">
+              <span class="template-icon">&#128640;</span>
+              <div class="template-info">
+                <span class="template-name">Full App Build</span>
+                <span class="template-desc">Complete app from scratch</span>
+              </div>
+              <span class="template-count">10 tasks</span>
+            </div>
+            <div class="template-card" data-template="bug-fix-sprint">
+              <span class="template-icon">&#9889;</span>
+              <div class="template-info">
+                <span class="template-name">Bug Fix Sprint</span>
+                <span class="template-desc">Triage, fix, test, review</span>
+              </div>
+              <span class="template-count">5 tasks</span>
+            </div>
+            <div class="template-card" data-template="add-feature">
+              <span class="template-icon">&#9881;</span>
+              <div class="template-info">
+                <span class="template-name">Add Feature</span>
+                <span class="template-desc">Research, build, integrate</span>
+              </div>
+              <span class="template-count">6 tasks</span>
+            </div>
+            <div class="template-card" data-template="code-review">
+              <span class="template-icon">&#128269;</span>
+              <div class="template-info">
+                <span class="template-name">Code Review</span>
+                <span class="template-desc">Analyze, review, report</span>
+              </div>
+              <span class="template-count">4 tasks</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Task Queue Panel -->
+      <div class="panel">
+        <div class="panel-header">
+          <h2 class="panel-title">Task Queue</h2>
+          <span id="queue-count" class="badge">0</span>
+        </div>
+        <div class="panel-body">
+          <div id="task-queue"></div>
+        </div>
+      </div>
+
+      <!-- VoltAgent Config Panel -->
+      <div class="panel">
+        <div class="panel-header">
+          <h2 class="panel-title">VoltAgent Config</h2>
+          <span class="badge badge-green">CONNECTED</span>
+        </div>
+        <div class="panel-body">
+
+          <div class="config-section">
+            <h3 class="config-section-title">Orchestration</h3>
+            <div class="config-grid">
+              <div class="config-item">
+                <span class="config-label">Mode</span>
+                <span class="config-value">supervisor</span>
+              </div>
+              <div class="config-item">
+                <span class="config-label">Max Parallel</span>
+                <span class="config-value">5</span>
+              </div>
+              <div class="config-item">
+                <span class="config-label">Timeout</span>
+                <span class="config-value">30min</span>
+              </div>
+              <div class="config-item">
+                <span class="config-label">Auto-retry</span>
+                <label class="toggle">
+                  <input type="checkbox" checked>
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div class="config-section">
+            <h3 class="config-section-title">Provider</h3>
+            <div class="config-grid">
+              <div class="config-item">
+                <span class="config-label">LLM</span>
+                <span class="config-value">claude-opus-4-6</span>
+              </div>
+              <div class="config-item">
+                <span class="config-label">Fallback</span>
+                <span class="config-value">claude-sonnet-4-6</span>
+              </div>
+              <div class="config-item">
+                <span class="config-label">Memory</span>
+                <span class="config-value">libsql</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="config-section">
+            <h3 class="config-section-title">Task Splitting</h3>
+            <div class="config-grid">
+              <div class="config-item">
+                <span class="config-label">Strategy</span>
+                <span class="config-value">auto-decompose</span>
+              </div>
+              <div class="config-item">
+                <span class="config-label">Max chunk</span>
+                <span class="config-value">500 lines</span>
+              </div>
+              <div class="config-item">
+                <span class="config-label">Dep graph</span>
+                <label class="toggle">
+                  <input type="checkbox" checked>
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+<!-- New Task Modal -->
+<div id="new-task-modal" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 class="modal-title">Create New Task</h2>
+      <button class="modal-close" data-close-modal>&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label" for="task-name">Task Name</label>
+        <input type="text" id="task-name" class="input" placeholder="Enter task name">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="task-description">Description</label>
+        <textarea id="task-description" class="input textarea" placeholder="Describe the task..."></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="task-agent-type">Agent Type</label>
+        <select id="task-agent-type" class="input">
+          <option value="builder">Builder</option>
+          <option value="reviewer">Reviewer</option>
+          <option value="tester">Tester</option>
+          <option value="researcher">Researcher</option>
+          <option value="debugger">Debugger</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="task-priority">Priority</label>
+        <select id="task-priority" class="input">
+          <option value="high">High</option>
+          <option value="medium" selected>Medium</option>
+          <option value="low">Low</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="task-dependencies">Dependencies</label>
+        <input type="text" id="task-dependencies" class="input" placeholder="Comma-separated task IDs">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="task-timeout">Timeout (minutes)</label>
+        <input type="number" id="task-timeout" class="input" value="30" min="1">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" data-close-modal>Cancel</button>
+      <button id="create-task-btn" class="btn btn-primary">Create &amp; Queue</button>
+    </div>
+  </div>
+</div>
+
+<!-- Agent Detail Modal -->
+<div id="agent-detail-modal" class="modal-overlay">
+  <div class="modal modal-large" style="max-width:700px">
+    <div class="modal-header">
+      <div class="modal-header-info">
+        <span id="detail-agent-name" class="modal-title"></span>
+        <span id="detail-agent-type" class="badge"></span>
+        <span id="detail-agent-status" class="badge status-badge"></span>
+      </div>
+      <button class="modal-close" data-close-modal>&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="detail-metrics">
+        <div class="detail-metric-card">
+          <span class="detail-metric-label">Progress</span>
+          <span class="detail-metric-value"><span id="detail-progress">0</span>%</span>
+        </div>
+        <div class="detail-metric-card">
+          <span class="detail-metric-label">Tokens Used</span>
+          <span class="detail-metric-value" id="detail-tokens">0</span>
+        </div>
+        <div class="detail-metric-card">
+          <span class="detail-metric-label">Cost</span>
+          <span class="detail-metric-value">$<span id="detail-cost">0.00</span></span>
+        </div>
+        <div class="detail-metric-card">
+          <span class="detail-metric-label">Tasks Done</span>
+          <span class="detail-metric-value" id="detail-completed">0</span>
+        </div>
+      </div>
+      <div class="tab-bar">
+        <button id="detail-tab-logs" class="tab active">Logs</button>
+        <button id="detail-tab-perf" class="tab">Performance</button>
+      </div>
+      <div id="detail-logs" class="log-stream"></div>
+      <div id="detail-perf-content" class="tab-content" style="display:none"></div>
+    </div>
+    <div class="modal-footer">
+      <button id="detail-pause-btn" class="btn btn-danger">Pause</button>
+      <button id="detail-resume-btn" class="btn btn-primary">Resume</button>
+      <button id="detail-reassign-btn" class="btn">Reassign</button>
+      <button id="detail-remove-btn" class="btn btn-danger">Remove</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast Container -->
+<div id="toast-container" style="position:fixed;top:1rem;right:1rem;z-index:11000"></div>
+
+<!-- Keyboard Shortcuts Modal -->
+<div id="shortcuts-modal" class="modal-overlay">
+  <div class="modal modal-small">
+    <div class="modal-header">
+      <h2 class="modal-title">Keyboard Shortcuts</h2>
+      <button class="modal-close" data-close-modal>&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="shortcut-list">
+        <div class="shortcut-item">
+          <kbd>N</kbd>
+          <span>New Task</span>
+        </div>
+        <div class="shortcut-item">
+          <kbd>S</kbd>
+          <span>Spawn Agent</span>
+        </div>
+        <div class="shortcut-item">
+          <kbd>L</kbd>
+          <span>Toggle Logs</span>
+        </div>
+        <div class="shortcut-item">
+          <kbd>/</kbd>
+          <span>Search Logs</span>
+        </div>
+        <div class="shortcut-item">
+          <kbd>Esc</kbd>
+          <span>Close Modal</span>
+        </div>
+        <div class="shortcut-item">
+          <kbd>?</kbd>
+          <span>Show Shortcuts</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
