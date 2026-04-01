@@ -27,14 +27,16 @@ const DEFAULT_MODEL = process.env.DEFAULT_MODEL || 'claude-sonnet-4-6';
 const MAX_AGENTS = parseInt(process.env.MAX_CONCURRENT_AGENTS || '5', 10);
 const TIMEOUT_MIN = parseInt(process.env.AGENT_TIMEOUT_MINUTES || '30', 10);
 
-if (!API_KEY || API_KEY.startsWith('sk-ant-xxxxx')) {
-  console.error('\n  ERROR: Set your ANTHROPIC_API_KEY in .env\n');
-  console.error('  cp .env.example .env');
-  console.error('  # Edit .env with your key\n');
-  process.exit(1);
-}
+let anthropic = null;
+const hasApiKey = API_KEY && !API_KEY.startsWith('sk-ant-xxxxx');
 
-const anthropic = new Anthropic({ apiKey: API_KEY });
+if (hasApiKey) {
+  anthropic = new Anthropic({ apiKey: API_KEY });
+} else {
+  console.warn('\n  WARNING: No ANTHROPIC_API_KEY set in .env');
+  console.warn('  Dashboard will run in demo mode (simulated agents).');
+  console.warn('  To use real Claude agents: edit .env and restart.\n');
+}
 
 // ============================================================================
 // STATE
@@ -110,10 +112,17 @@ async function runAgent(agent) {
   agent.progress = 0;
   broadcast({ type: 'state', data: getFullState() });
 
-  const systemPrompt = getSystemPrompt(agent.type);
   const taskPrompt = agent.task;
-
   addLog(agent.name, `Starting task: ${taskPrompt}`);
+
+  // ---- DEMO MODE (no API key) ----
+  if (!anthropic) {
+    await runAgentDemo(agent);
+    return;
+  }
+
+  // ---- REAL MODE (Claude API) ----
+  const systemPrompt = getSystemPrompt(agent.type);
 
   try {
     const stream = anthropic.messages.stream({
@@ -125,14 +134,13 @@ async function runAgent(agent) {
 
     let totalTokens = 0;
     let chunks = 0;
-    const totalExpectedChunks = 40; // rough estimate for progress
+    const totalExpectedChunks = 40;
 
     stream.on('text', (text) => {
       chunks++;
       agent.progress = Math.min(95, Math.round((chunks / totalExpectedChunks) * 100));
       agent.elapsed = Math.round((Date.now() - agent.startedAt) / 1000);
 
-      // Log interesting content periodically
       if (chunks % 8 === 0) {
         const preview = text.trim().slice(0, 80);
         if (preview) addLog(agent.name, preview + (text.length > 80 ? '...' : ''));
@@ -145,7 +153,7 @@ async function runAgent(agent) {
     totalTokens = (finalMessage.usage?.input_tokens || 0) + (finalMessage.usage?.output_tokens || 0);
 
     agent.tokensUsed += totalTokens;
-    agent.cost = agent.tokensUsed * 0.003 / 1000; // rough average
+    agent.cost = agent.tokensUsed * 0.003 / 1000;
     agent.progress = 100;
     agent.status = 'completed';
     agent.completedTasks++;
@@ -168,6 +176,50 @@ async function runAgent(agent) {
     agent.elapsed = Math.round((Date.now() - agent.startedAt) / 1000);
     addLog(agent.name, `Error: ${err.message}`);
     broadcast({ type: 'toast', data: { message: `${agent.name} failed: ${err.message}`, toastType: 'error' } });
+  }
+
+  broadcast({ type: 'state', data: getFullState() });
+}
+
+// Demo mode: simulates agent work without API calls
+async function runAgentDemo(agent) {
+  const SIM_MESSAGES = {
+    builder: ['Generating component structure...', 'Writing API handler...', 'Creating migration file...', 'Scaffolding controllers...', 'Compiling modules...', 'Building auth flow...', 'Writing validation schemas...'],
+    researcher: ['Analyzing dependency graph...', 'Evaluating patterns...', 'Reviewing best practices...', 'Comparing solutions...', 'Assessing vulnerabilities...'],
+    tester: ['Running test suite...', 'Executing load test...', 'Validating API schemas...', 'Testing edge cases...', 'Checking error paths...'],
+    reviewer: ['Reviewing code style...', 'Checking security patterns...', 'Validating error handling...', 'Analyzing complexity...'],
+    debugger: ['Tracing execution...', 'Analyzing stack trace...', 'Inspecting network logs...', 'Profiling CPU usage...', 'Checking race conditions...'],
+  };
+  const msgs = SIM_MESSAGES[agent.type] || SIM_MESSAGES.builder;
+
+  for (let i = 0; i <= 20; i++) {
+    await new Promise(r => setTimeout(r, 800 + Math.random() * 1200));
+    agent.progress = Math.min(100, Math.round((i / 20) * 100));
+    agent.elapsed = Math.round((Date.now() - agent.startedAt) / 1000);
+    agent.tokensUsed += 50 + Math.floor(Math.random() * 150);
+    agent.cost = agent.tokensUsed * 0.003 / 1000;
+
+    if (Math.random() < 0.4) {
+      addLog(agent.name, msgs[Math.floor(Math.random() * msgs.length)]);
+    }
+
+    broadcast({ type: 'agent-progress', data: { id: agent.id, progress: agent.progress, elapsed: agent.elapsed } });
+  }
+
+  agent.progress = 100;
+  agent.status = 'completed';
+  agent.completedTasks++;
+  agent.elapsed = Math.round((Date.now() - agent.startedAt) / 1000);
+  addLog(agent.name, `[DEMO] Task completed: ${agent.task}`);
+  broadcast({ type: 'toast', data: { message: `${agent.name} completed "${agent.task}" (demo mode)`, toastType: 'success' } });
+
+  // Auto-assign next matching task
+  const nextTask = state.tasks.find(t => t.agentType === agent.type);
+  if (nextTask) {
+    state.tasks = state.tasks.filter(t => t.id !== nextTask.id);
+    agent.task = nextTask.name + ': ' + nextTask.desc;
+    addLog('Supervisor', `Auto-assigned "${nextTask.name}" to ${agent.name}`);
+    await runAgentDemo(agent);
   }
 
   broadcast({ type: 'state', data: getFullState() });
@@ -393,6 +445,7 @@ wss.on('connection', (ws) => {
 });
 
 server.listen(PORT, () => {
+  const mode = hasApiKey ? 'LIVE (Claude API)' : 'DEMO (no API key)';
   console.log('');
   console.log('  ┌─────────────────────────────────────────┐');
   console.log('  │                                         │');
@@ -400,10 +453,15 @@ server.listen(PORT, () => {
   console.log('  │                                         │');
   console.log(`  │   → http://localhost:${PORT}               │`);
   console.log('  │                                         │');
-  console.log(`  │   Model:    ${DEFAULT_MODEL.padEnd(24)}│`);
+  console.log(`  │   Mode:      ${mode.padEnd(24)}│`);
+  console.log(`  │   Model:     ${DEFAULT_MODEL.padEnd(24)}│`);
   console.log(`  │   Max agents: ${String(MAX_AGENTS).padEnd(22)}│`);
-  console.log(`  │   Timeout:    ${String(TIMEOUT_MIN).padEnd(1)}min                  │`);
+  console.log(`  │   Timeout:    ${String(TIMEOUT_MIN)}min                   │`);
   console.log('  │                                         │');
+  if (!hasApiKey) {
+  console.log('  │   Add your key to .env for live mode    │');
+  console.log('  │                                         │');
+  }
   console.log('  └─────────────────────────────────────────┘');
   console.log('');
 });
