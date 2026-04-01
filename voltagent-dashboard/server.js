@@ -444,6 +444,21 @@ wss.on('connection', (ws) => {
   ws.on('close', () => clients.delete(ws));
 });
 
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error('');
+    console.error(`  ERROR: Port ${PORT} is already in use.`);
+    console.error('');
+    console.error('  Fix: Run this command to free the port:');
+    console.error(`    kill $(lsof -ti:${PORT})`);
+    console.error('');
+    console.error('  Or change PORT in your .env file.');
+    console.error('');
+    process.exit(1);
+  }
+  throw err;
+});
+
 server.listen(PORT, () => {
   const mode = hasApiKey ? 'LIVE (Claude API)' : 'DEMO (no API key)';
   console.log('');

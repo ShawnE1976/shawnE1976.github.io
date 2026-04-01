@@ -21,12 +21,32 @@
   // WEBSOCKET
   // --------------------------------------------------------------------------
 
+  let connectAttempts = 0;
+
   function connect() {
+    // Close existing connection if any
+    if (ws) {
+      try { ws.close(); } catch {}
+      ws = null;
+    }
+
     const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
-    ws = new WebSocket(`${proto}//${location.host}`);
+    const url = `${proto}//${location.host}`;
+
+    updateConnectionStatus('connecting');
+
+    try {
+      ws = new WebSocket(url);
+    } catch (err) {
+      updateConnectionStatus('disconnected');
+      scheduleReconnect();
+      return;
+    }
 
     ws.onopen = () => {
+      connectAttempts = 0;
       showToast('Connected to AgentHub server', 'success');
+      updateConnectionStatus('connected');
       if (reconnectTimer) { clearInterval(reconnectTimer); reconnectTimer = null; }
     };
 
@@ -63,15 +83,58 @@
     };
 
     ws.onclose = () => {
-      showToast('Disconnected - reconnecting...', 'warn');
-      if (!reconnectTimer) {
-        reconnectTimer = setInterval(() => {
-          if (!ws || ws.readyState === WebSocket.CLOSED) connect();
-        }, 3000);
-      }
+      updateConnectionStatus('disconnected');
+      scheduleReconnect();
     };
 
-    ws.onerror = () => {};
+    ws.onerror = () => {
+      updateConnectionStatus('disconnected');
+    };
+  }
+
+  function scheduleReconnect() {
+    if (reconnectTimer) return;
+    connectAttempts++;
+    // Exponential backoff: 1s, 2s, 4s, max 10s
+    const delay = Math.min(1000 * Math.pow(2, connectAttempts - 1), 10000);
+    reconnectTimer = setTimeout(() => {
+      reconnectTimer = null;
+      connect();
+    }, delay);
+  }
+
+  function updateConnectionStatus(status) {
+    const badge = document.getElementById('connection-badge');
+    const banner = document.getElementById('connection-banner');
+    const reconnectMsg = document.getElementById('reconnect-msg');
+
+    if (badge) {
+      if (status === 'connected') {
+        badge.textContent = 'CONNECTED';
+        badge.className = 'badge badge-green';
+        badge.style.color = '';
+      } else if (status === 'connecting') {
+        badge.textContent = 'CONNECTING...';
+        badge.className = 'badge';
+        badge.style.color = '#f59e0b';
+      } else {
+        badge.textContent = 'DISCONNECTED';
+        badge.className = 'badge';
+        badge.style.color = '#ef4444';
+      }
+    }
+
+    // Show/hide the big red banner
+    if (banner) {
+      if (status === 'connected') {
+        banner.style.display = 'none';
+        document.querySelector('.main').style.marginTop = '';
+      } else if (status === 'disconnected' && connectAttempts > 1) {
+        banner.style.display = 'block';
+        document.querySelector('.main').style.marginTop = 'calc(var(--header-h) + 36px)';
+        if (reconnectMsg) reconnectMsg.textContent = `Retrying... (attempt ${connectAttempts})`;
+      }
+    }
   }
 
   function send(action, data) {

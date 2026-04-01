@@ -25,8 +25,14 @@ echo ""
 echo "  Starting AgentHub..."
 echo ""
 
-# Open browser after 2 second delay
-(sleep 2 && open http://localhost:3000) &
+# Wait for server to be ready then open browser
+(
+  for i in 1 2 3 4 5 6 7 8 9 10; do
+    sleep 1
+    curl -s http://localhost:3000/api/health > /dev/null 2>&1 && break
+  done
+  open http://localhost:3000
+) &
 
 # Start server
 node server.js

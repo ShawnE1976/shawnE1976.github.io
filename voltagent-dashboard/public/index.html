@@ -8,6 +8,11 @@
 </head>
 <body>
 
+<div id="connection-banner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:9999;background:#7f1d1d;color:#fca5a5;text-align:center;padding:8px;font-size:0.8rem;">
+  Cannot connect to server. Make sure the server is running: <code style="background:rgba(0,0,0,0.3);padding:2px 6px;border-radius:3px;">cd ~/AgentHub && node server.js</code>
+  <span id="reconnect-msg" style="margin-left:8px;"></span>
+</div>
+
 <header>
   <div class="header-inner">
     <div class="logo">

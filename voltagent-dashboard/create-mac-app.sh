@@ -29,10 +29,10 @@ if [ ! -f ".env" ]; then
   exit 0
 fi
 
-# Open browser
-(sleep 2 && open http://localhost:3000) &
+# Wait for server then open browser
+(for i in 1 2 3 4 5 6 7 8 9 10; do sleep 1; curl -s http://localhost:3000/api/health > /dev/null 2>&1 && break; done; open http://localhost:3000) &
 
-# Start server (use whichever node is available)
+# Start server
 /usr/local/bin/node server.js 2>/dev/null || /opt/homebrew/bin/node server.js
 LAUNCHER
 
