@@ -1,15 +1,17 @@
 {
-  "name": "DockLedger — The Liveaboard Companion",
-  "short_name": "DockLedger",
-  "description": "Find liveaboard-friendly marinas, track expenses, log maintenance. The all-in-one app for life on the water.",
+  "name": "PhenoMap — Global UAP Intelligence Platform",
+  "short_name": "PhenoMap",
+  "description": "Interactive map and database of UAP/UFO sightings from government, military, and civilian sources worldwide.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0b1120",
+  "background_color": "#080c18",
   "theme_color": "#00d4ff",
   "orientation": "portrait-primary",
   "icons": [
     {"src": "icon-192.svg", "sizes": "192x192", "type": "image/svg+xml"},
     {"src": "icon-512.svg", "sizes": "512x512", "type": "image/svg+xml"}
   ],
-  "categories": ["lifestyle", "finance", "navigation"]
+  "categories": ["news", "education", "reference"],
+  "lang": "en",
+  "scope": "/"
 }

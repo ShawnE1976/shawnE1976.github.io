@@ -436,14 +436,3 @@ const SIGHTINGS = [
   }
 ];
 
-// Populate year filter
-function populateYearFilter() {
-  const years = [...new Set(SIGHTINGS.map(s => s.date.split('-')[0]))].sort().reverse();
-  const sel = document.getElementById('filter-year');
-  years.forEach(y => {
-    const opt = document.createElement('option');
-    opt.value = y;
-    opt.textContent = y;
-    sel.appendChild(opt);
-  });
-}
