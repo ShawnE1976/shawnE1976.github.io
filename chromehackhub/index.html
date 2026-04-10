@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="ChromeHackHub — Chrome extension and AI tool tutorials. Turn Chrome into a Productivity Machine." />
+  <title>ChromeHackHub — Turn Chrome into a Productivity Machine</title>
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --bg:         #0D1B2A;
+      --bg-card:    #122035;
+      --bg-card-2:  #0f1e31;
+      --accent:     #15C39A;
+      --accent-dim: #0fa882;
+      --text:       #ffffff;
+      --text-muted: #8fa8c0;
+      --border:     #1e3450;
+      --badge-bg:   #0d3325;
+      --badge-text: #15C39A;
+      --radius:     10px;
+      --radius-lg:  16px;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.6;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ─── HEADER ─── */
+    header {
+      background-color: var(--bg-card);
+      border-bottom: 1px solid var(--border);
+      padding: 52px 24px 48px;
+      text-align: center;
+    }
+
+    .site-logo {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .logo-icon {
+      width: 44px;
+      height: 44px;
+      background-color: var(--accent);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .logo-icon svg {
+      width: 24px;
+      height: 24px;
+      fill: var(--bg);
+    }
+
+    .site-name {
+      font-size: clamp(1.7rem, 5.5vw, 2.4rem);
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      color: var(--text);
+    }
+
+    .site-name span {
+      color: var(--accent);
+    }
+
+    .site-tagline {
+      font-size: clamp(1rem, 2.8vw, 1.2rem);
+      color: var(--text-muted);
+      max-width: 580px;
+      margin: 0 auto;
+      font-weight: 400;
+    }
+
+    /* ─── MAIN CONTENT ─── */
+    main {
+      flex: 1;
+      max-width: 880px;
+      margin: 0 auto;
+      padding: 60px 24px 72px;
+      width: 100%;
+    }
+
+    /* ─── SECTION LABELS ─── */
+    .section-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.13em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 20px;
+    }
+
+    /* ─── FEATURED TUTORIAL CARD ─── */
+    .featured-card {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 36px;
+      margin-bottom: 60px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .featured-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--accent), #0fa882);
+    }
+
+    .badge {
+      display: inline-block;
+      background-color: var(--badge-bg);
+      color: var(--badge-text);
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+      padding: 4px 11px;
+      border-radius: 4px;
+      border: 1px solid var(--accent);
+      margin-bottom: 18px;
+    }
+
+    .card-title {
+      font-size: clamp(1.1rem, 3.2vw, 1.35rem);
+      font-weight: 700;
+      line-height: 1.4;
+      margin-bottom: 12px;
+      color: var(--text);
+    }
+
+    .card-desc {
+      font-size: 0.97rem;
+      color: var(--text-muted);
+      margin-bottom: 28px;
+      line-height: 1.65;
+    }
+
+    .btn-primary {
+      display: inline-block;
+      background-color: var(--accent);
+      color: var(--bg);
+      font-size: 0.96rem;
+      font-weight: 700;
+      padding: 13px 28px;
+      border-radius: var(--radius);
+      text-decoration: none;
+      transition: background-color 0.18s ease, transform 0.12s ease;
+      letter-spacing: 0.01em;
+    }
+
+    .btn-primary:hover {
+      background-color: var(--accent-dim);
+      transform: translateY(-1px);
+    }
+
+    .btn-primary:active {
+      transform: translateY(0);
+    }
+
+    /* ─── DIVIDER ─── */
+    .divider {
+      height: 1px;
+      background-color: var(--border);
+      margin: 0 0 60px;
+    }
+
+    /* ─── COMING SOON SECTION ─── */
+    .coming-soon-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .coming-card {
+      background-color: var(--bg-card-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      transition: border-color 0.18s ease;
+    }
+
+    .coming-card:hover {
+      border-color: rgba(21, 195, 154, 0.32);
+    }
+
+    .coming-card-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      min-width: 0;
+    }
+
+    .coming-number {
+      flex-shrink: 0;
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      border: 1.5px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+
+    .coming-title {
+      font-size: 0.97rem;
+      font-weight: 600;
+      color: var(--text);
+      line-height: 1.4;
+    }
+
+    .coming-pill {
+      flex-shrink: 0;
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      background-color: var(--bg-card);
+      border: 1px solid var(--border);
+      padding: 4px 11px;
+      border-radius: 20px;
+    }
+
+    /* ─── FOOTER ─── */
+    footer {
+      background-color: var(--bg-card);
+      border-top: 1px solid var(--border);
+      text-align: center;
+      padding: 26px 24px;
+    }
+
+    .footer-text {
+      font-size: 0.83rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    /* ─── RESPONSIVE ─── */
+    @media (max-width: 600px) {
+      header {
+        padding: 36px 20px 32px;
+      }
+
+      main {
+        padding: 40px 16px 52px;
+      }
+
+      .featured-card {
+        padding: 24px 18px;
+      }
+
+      .coming-card {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+      }
+
+      .coming-pill {
+        margin-left: calc(34px + 16px);
+      }
+
+      .btn-primary {
+        display: block;
+        text-align: center;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header>
+    <div class="site-logo">
+      <div class="logo-icon" aria-hidden="true">
+        <!-- Chrome-inspired circle icon -->
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="12" cy="12" r="4"/>
+          <path d="M12 2a10 10 0 0 1 8.66 5H12a5 5 0 0 0-4.58 3H3.52A10 10 0 0 1 12 2z"/>
+          <path d="M2 12a10 10 0 0 0 5.27 8.82L8.8 15a5 5 0 0 1-1.8-3H2z"/>
+          <path d="M12 22a10 10 0 0 0 8.48-4.82L15.2 13a5 5 0 0 1-3.2 2v7z"/>
+        </svg>
+      </div>
+      <span class="site-name">Chrome<span>Hack</span>Hub</span>
+    </div>
+    <p class="site-tagline">Turn Chrome into a Productivity Machine</p>
+  </header>
+
+  <!-- MAIN -->
+  <main>
+
+    <!-- Featured Tutorials -->
+    <p class="section-label">Featured Tutorials</p>
+    <article class="featured-card">
+      <span class="badge">NEW 2026</span>
+
+      <h1 class="card-title">
+        Grammarly AI Chrome Extension Full Tutorial 2026
+      </h1>
+      <p class="card-desc">
+        From install to advanced AI rewrites &mdash; the complete beginner-to-pro guide.
+      </p>
+      <a href="grammarly-tutorial-2026.html" class="btn-primary">View Full Production Package &rarr;</a>
+    </article>
+
+    <div class="divider" role="separator"></div>
+
+    <!-- Coming Soon -->
+    <p class="section-label">Coming Soon</p>
+    <div class="coming-soon-grid" role="list">
+
+      <div class="coming-card" role="listitem">
+        <div class="coming-card-left">
+          <div class="coming-number" aria-hidden="true">1</div>
+          <span class="coming-title">ChatGPT Chrome Extension Tutorial 2026</span>
+        </div>
+        <span class="coming-pill">Coming Soon</span>
+      </div>
+
+      <div class="coming-card" role="listitem">
+        <div class="coming-card-left">
+          <div class="coming-number" aria-hidden="true">2</div>
+          <span class="coming-title">Best AI Chrome Extensions 2026 &ndash; Top 5 Ranked</span>
+        </div>
+        <span class="coming-pill">Coming Soon</span>
+      </div>
+
+      <div class="coming-card" role="listitem">
+        <div class="coming-card-left">
+          <div class="coming-number" aria-hidden="true">3</div>
+          <span class="coming-title">Grammarly vs. ProWritingAid vs. Hemingway 2026</span>
+        </div>
+        <span class="coming-pill">Coming Soon</span>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer>
+    <p class="footer-text">
+      &copy; 2026 ChromeHackHub &mdash; All production packages for educational use.
+    </p>
+  </footer>
+
+</body>
+</html>
