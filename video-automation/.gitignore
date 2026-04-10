@@ -4,12 +4,8 @@ youtube_token.json
 tiktok_token.json
 .env
 
-# Output videos
-output/*.mp4
-output/*.avi
-output/*.mov
-
-# Temp files
-output/_temp_*
+# Output directory (generated videos, previews, temp files)
+output/*
+!output/.gitkeep
 __pycache__/
 *.pyc
