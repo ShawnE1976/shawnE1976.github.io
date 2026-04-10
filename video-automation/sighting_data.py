@@ -1,0 +1,163 @@
+"""
+PhenoMap sighting data — Python mirror of data.js
+Pulled from the main PhenoMap database for video generation.
+"""
+
+SIGHTINGS = [
+    {
+        "id": 1,
+        "title": "USS Nimitz 'Tic-Tac' Incident",
+        "location": "Pacific Ocean, off San Diego, CA",
+        "lat": 31.5, "lng": -117.5,
+        "date": "2004-11-14",
+        "source": "gov", "status": "verified",
+        "description": "Navy pilots from USS Nimitz encountered a white, elongated craft with no wings or exhaust, hovering at 80,000 ft then dropping to sea level in seconds.",
+        "shape": "Elongated oval / Tic-Tac",
+        "duration": "~5 minutes",
+        "witnesses": "Multiple Navy pilots & radar operators",
+        "gov_ref": "DoD declassified video FLIR1 (2020)"
+    },
+    {
+        "id": 2,
+        "title": "GIMBAL UAP — Atlantic Coast",
+        "location": "Atlantic Ocean off SE US Coast",
+        "lat": 30.5, "lng": -77.0,
+        "date": "2015-01-20",
+        "source": "mil", "status": "verified",
+        "description": "IR video from F/A-18 shows an object rotating against the wind with no visible propulsion.",
+        "shape": "Round / rotating",
+        "duration": "~1.5 minutes on video",
+        "witnesses": "USS Theodore Roosevelt strike group pilots",
+        "gov_ref": "DoD declassified video GIMBAL (2020)"
+    },
+    {
+        "id": 3,
+        "title": "GOFAST UAP — Atlantic Coast",
+        "location": "Atlantic Ocean off Florida",
+        "lat": 29.0, "lng": -79.5,
+        "date": "2015-02-10",
+        "source": "mil", "status": "verified",
+        "description": "IR footage from F/A-18 shows a small object moving extremely fast at very low altitude over ocean waves.",
+        "shape": "Small / indeterminate",
+        "duration": "~34 seconds on video",
+        "witnesses": "USS Theodore Roosevelt pilots",
+        "gov_ref": "DoD declassified video GOFAST (2020)"
+    },
+    {
+        "id": 4,
+        "title": "Washington D.C. UFO Flap",
+        "location": "Washington, D.C.",
+        "lat": 38.9072, "lng": -77.0369,
+        "date": "1952-07-19",
+        "source": "gov", "status": "verified",
+        "description": "Multiple radar returns and visual sightings over restricted DC airspace over two weekends. USAF scrambled jets twice.",
+        "shape": "Various lights / orbs",
+        "duration": "Multiple nights",
+        "witnesses": "Radar operators, pilots, civilians",
+        "gov_ref": "Project Blue Book"
+    },
+    {
+        "id": 12,
+        "title": "Phoenix Lights",
+        "location": "Phoenix, Arizona",
+        "lat": 33.4484, "lng": -112.0740,
+        "date": "1997-03-13",
+        "source": "civilian", "status": "pending",
+        "description": "Thousands of witnesses including Governor Fife Symington reported a massive V-shaped craft a mile wide silently passing over Phoenix.",
+        "shape": "Massive V-shape / boomerang",
+        "duration": "~2 hours",
+        "witnesses": "Thousands of civilians, Governor",
+        "gov_ref": "USAF official statement"
+    },
+    {
+        "id": 13,
+        "title": "Roswell Incident",
+        "location": "Roswell, New Mexico",
+        "lat": 33.3943, "lng": -104.5230,
+        "date": "1947-07-08",
+        "source": "gov", "status": "verified",
+        "description": "USAF initially announced recovery of a 'flying disc' before retracting. GAO found relevant records were improperly destroyed.",
+        "shape": "Unknown — debris field",
+        "duration": "N/A",
+        "witnesses": "Ranchers, USAF personnel",
+        "gov_ref": "USAF 'The Roswell Report' (1994 & 1997)"
+    },
+    {
+        "id": 16,
+        "title": "Rendlesham Forest Incident",
+        "location": "Rendlesham Forest, Suffolk, UK",
+        "lat": 52.0936, "lng": 1.4278,
+        "date": "1980-12-26",
+        "source": "mil", "status": "verified",
+        "description": "US Air Force personnel witnessed a triangular craft landing in Rendlesham Forest. Radiation readings confirmed.",
+        "shape": "Triangular / metallic",
+        "duration": "Multiple nights",
+        "witnesses": "USAF personnel including Lt. Col. Charles Halt",
+        "gov_ref": "Halt Memo (1981, declassified)"
+    },
+    {
+        "id": 22,
+        "title": "Battle of Los Angeles",
+        "location": "Los Angeles, California",
+        "lat": 34.0522, "lng": -118.2437,
+        "date": "1942-02-25",
+        "source": "mil", "status": "verified",
+        "description": "US Army fired 1,400 anti-aircraft rounds at an unknown target over LA. Searchlights tracked the object for over an hour.",
+        "shape": "Unknown — large target",
+        "duration": "~1 hour",
+        "witnesses": "Thousands of civilians, US Army units",
+        "gov_ref": "War Department official reports (1942)"
+    },
+    {
+        "id": 24,
+        "title": "Belgian UFO Wave",
+        "location": "Brussels, Belgium",
+        "lat": 50.8503, "lng": 4.3517,
+        "date": "1989-11-29",
+        "source": "mil", "status": "verified",
+        "description": "Thousands witnessed large triangular craft. Belgian Air Force scrambled F-16s; radar locked on target performing 40G+ acceleration.",
+        "shape": "Large triangle",
+        "duration": "Multiple months",
+        "witnesses": "Thousands + Belgian Air Force",
+        "gov_ref": "Belgian Air Force official report (1990)"
+    },
+    {
+        "id": 26,
+        "title": "Grusch Congressional Testimony",
+        "location": "Washington, D.C.",
+        "lat": 38.8899, "lng": -77.0091,
+        "date": "2023-07-26",
+        "source": "gov", "status": "verified",
+        "description": "Intelligence official David Grusch testified under oath that the US government possesses non-human craft and biologics.",
+        "shape": "N/A — testimony",
+        "duration": "N/A",
+        "witnesses": "US Congress public hearing",
+        "gov_ref": "House Oversight Subcommittee hearing (July 26, 2023)"
+    },
+    {
+        "id": 27,
+        "title": "Ariel School Encounter",
+        "location": "Ruwa, Zimbabwe",
+        "lat": -17.8893, "lng": 31.0206,
+        "date": "1994-09-16",
+        "source": "civilian", "status": "pending",
+        "description": "62 schoolchildren reported a landed silver craft and small beings. Harvard psychiatrist found consistent accounts years later.",
+        "shape": "Silver disc",
+        "duration": "~15 minutes",
+        "witnesses": "62 schoolchildren",
+        "gov_ref": "Harvard Medical School — Dr. John Mack investigation"
+    },
+    {
+        "id": 6,
+        "title": "Malmstrom AFB Missile Shutdown",
+        "location": "Malmstrom AFB, Montana",
+        "lat": 47.5096, "lng": -111.1835,
+        "date": "1967-03-16",
+        "source": "mil", "status": "verified",
+        "description": "A glowing red disc hovered near missile launch facilities. 10 Minuteman ICBMs went into 'No-Go' status simultaneously.",
+        "shape": "Disc / red glowing",
+        "duration": "~30 minutes",
+        "witnesses": "USAF security personnel, launch officers",
+        "gov_ref": "USAF FOIA documents"
+    },
+]

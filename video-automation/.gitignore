@@ -1,0 +1,15 @@
+# Secrets — NEVER commit
+client_secret.json
+youtube_token.json
+tiktok_token.json
+.env
+
+# Output videos
+output/*.mp4
+output/*.avi
+output/*.mov
+
+# Temp files
+output/_temp_*
+__pycache__/
+*.pyc
