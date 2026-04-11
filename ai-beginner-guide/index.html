@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LaunchTube — Your Faceless YouTube Starter Guide</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <div class="container">
+
+    <!-- Header -->
+    <header class="header">
+      <div class="logo">
+        <span class="logo-icon">&#9654;</span>
+        <span class="logo-text">LaunchTube</span>
+      </div>
+      <h1 class="hero-title">Start Your Faceless YouTube Channel&nbsp;&mdash; No&nbsp;Experience&nbsp;Needed</h1>
+      <p class="hero-sub">Type in a topic you're curious about and we'll give you a clear, step-by-step game plan using free AI tools. Perfect for total beginners.</p>
+    </header>
+
+    <!-- Input Section -->
+    <section class="input-section">
+      <label for="topicInput" class="input-label">What topic or niche interests you?</label>
+      <textarea
+        id="topicInput"
+        class="topic-textarea"
+        placeholder="e.g.  money tips for teens,  scary stories,  AI news,  pet care hacks,  motivational quotes..."
+        rows="3"
+      ></textarea>
+      <button id="generateBtn" class="btn-primary" disabled>Show Me What To Do</button>
+      <p class="input-hint">Hit the button or just start typing — we'll build your plan instantly.</p>
+    </section>
+
+    <!-- Quick-Pick Pills -->
+    <section class="pills-section" id="pillsSection">
+      <p class="pills-label">Or pick a popular niche:</p>
+      <div class="pills-row">
+        <button class="pill" data-topic="scary stories">Scary Stories</button>
+        <button class="pill" data-topic="money tips">Money Tips</button>
+        <button class="pill" data-topic="AI news">AI News</button>
+        <button class="pill" data-topic="motivational quotes">Motivation</button>
+        <button class="pill" data-topic="history facts">History Facts</button>
+        <button class="pill" data-topic="health and fitness tips">Fitness Tips</button>
+        <button class="pill" data-topic="cooking recipes for beginners">Easy Recipes</button>
+        <button class="pill" data-topic="space and astronomy">Space</button>
+      </div>
+    </section>
+
+    <!-- Results Dashboard -->
+    <section class="results" id="results" hidden>
+
+      <!-- Summary Bar -->
+      <div class="summary-bar" id="summaryBar"></div>
+
+      <!-- Step Cards Grid -->
+      <div class="cards-grid" id="cardsGrid"></div>
+
+      <!-- Bonus Tips -->
+      <div class="bonus-section" id="bonusSection"></div>
+
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <p>LaunchTube &mdash; Helping beginners create content with AI, one step at a time.</p>
+    </footer>
+
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
