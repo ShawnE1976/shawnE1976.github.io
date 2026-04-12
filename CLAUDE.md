@@ -24,6 +24,11 @@ A **Global UAP Intelligence Platform** — an interactive map and database of UA
 - **PWA:** manifest.json + service-worker.js for mobile install
 - **Hosting:** GitHub Pages (free, HTTPS included)
 
+## IMPORTANT: This Repo Is PhenoMap ONLY
+**DO NOT add other projects (HiggsField, DockLedger, etc.) to this repo.**
+Each project must have its own separate GitHub repository. If the user asks to build
+something new, create a new repo for it — do not put it here.
+
 ## File Structure
 ```
 /index.html          — Main app shell (sidebar, panels, paywall, modal)
@@ -37,7 +42,6 @@ A **Global UAP Intelligence Platform** — an interactive map and database of UA
 /cover.svg           — Marketing cover image
 /thumbnail.svg       — Thumbnail asset
 /CLAUDE.md           — This file (project memory)
-/higgsfield/         — SEPARATE PROJECT (AI video platform) — may move to own repo
 ```
 
 ## Key Features (Working)
@@ -55,16 +59,17 @@ A **Global UAP Intelligence Platform** — an interactive map and database of UA
 
 ## What Needs Work (Priority Order)
 1. **PWA installable on iOS/Android** — needs service worker, proper icons, meta tags ← IN PROGRESS
-2. **Separate repos** — HiggsField should be its own repo, not a subfolder
+2. ~~**Separate repos** — HiggsField should be its own repo, not a subfolder~~ ← DONE (2026-04-12)
 3. **Real backend** — Currently all frontend; needs user accounts, real database, API
 4. **Stripe integration** — Payment link exists but no subscription management
 5. **Live data feeds** — Connect to NUFORC/MUFON APIs for real-time sightings
 6. **Push notifications** — For nearby sighting alerts (needs backend)
 7. **App Store listing** — Use PWABuilder or Capacitor to wrap for iOS/Android stores
 
-## Other Projects (Separate)
-- **HiggsField Hub** — AI video intelligence platform (currently in /higgsfield/ subfolder, should be own repo)
-- **DockLedger** — Liveaboard marina companion (abandoned, manifest.json was leftover)
+## Other Projects (Separate Repos — NOT in this repo)
+- **HiggsField Hub** — AI video intelligence platform → `ShawnE1976/higgsfield`
+- **DockLedger** — Liveaboard marina companion (abandoned)
 
 ## Session Notes
 - 2026-04-08: Created CLAUDE.md, fixed PWA setup for mobile install, cleaned up manifest.json
+- 2026-04-12: Separated HiggsField into its own repo, added .gitignore, configured Blotato MCP integration
