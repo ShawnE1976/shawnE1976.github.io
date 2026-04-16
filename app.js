@@ -491,10 +491,7 @@ function handleSubmit(e) {
 
 // ── SETTINGS ─────────────────────────────────────────────────
 function loadSettings() {
-  try {
-    const s = localStorage.getItem('phenomap_settings');
-    settings = s ? JSON.parse(s) : {};
-  } catch (e) { settings = {}; }
+  settings = readSettings();
 }
 
 function saveSettings() {
@@ -510,7 +507,7 @@ function saveSettings() {
     govOnly:       document.getElementById('s-govonly')?.checked,
     anon:          document.getElementById('s-anon')?.checked,
   };
-  try { localStorage.setItem('phenomap_settings', JSON.stringify(settings)); } catch (e) {}
+  writeSettings(settings);
 }
 
 function toggleDarkMode(cb) {
@@ -550,7 +547,7 @@ function download(filename, content, type) {
 
 // ── PAYWALL ───────────────────────────────────────────────────
 function checkPremium() {
-  isPremium = localStorage.getItem('phenomap_premium') === 'true';
+  isPremium = readPremium();
 }
 
 function showPaywall() {
@@ -572,7 +569,7 @@ function openStripe() {
 
 function activatePremium() {
   isPremium = true;
-  localStorage.setItem('phenomap_premium', 'true');
+  writePremium(true);
   closePaywall();
 }
 
@@ -609,12 +606,9 @@ function populateYearFilter() {
 }
 
 function saveUserSightings() {
-  try { localStorage.setItem('phenomap_user_sightings', JSON.stringify(userSightings)); } catch (e) {}
+  writeUserSightings(userSightings);
 }
 
 function loadUserSightings() {
-  try {
-    const raw = localStorage.getItem('phenomap_user_sightings');
-    if (raw) userSightings = JSON.parse(raw);
-  } catch (e) { userSightings = []; }
+  userSightings = readUserSightings();
 }
