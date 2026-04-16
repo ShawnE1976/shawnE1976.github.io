@@ -5,7 +5,8 @@
   "description": "PhenoMap — Global UAP Intelligence Platform",
   "scripts": {
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:e2e": "playwright test"
   },
   "devDependencies": {
     "jsdom": "^29.0.2",
