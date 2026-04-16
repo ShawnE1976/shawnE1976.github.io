@@ -100,28 +100,21 @@ function buildMarkers() {
 }
 
 function applyFilters() {
-  const src    = document.getElementById('filter-source').value;
-  const shape  = document.getElementById('filter-shape').value;
-  const year   = document.getElementById('filter-year').value;
-  const status = document.getElementById('filter-status').value;
-  const video  = document.getElementById('filter-video').value;
+  const filters = {
+    source: document.getElementById('filter-source').value,
+    shape:  document.getElementById('filter-shape').value,
+    year:   document.getElementById('filter-year').value,
+    status: document.getElementById('filter-status').value,
+    video:  document.getElementById('filter-video').value,
+  };
 
   markerCluster.clearLayers();
+  const visibleData = filterSightings(allMarkers.map(m => m._sightingData), filters);
+  const visibleIds = new Set(visibleData.map(s => s.id ?? s.uid));
   let visible = 0;
-
   allMarkers.forEach(m => {
     const s = m._sightingData;
-    const sy = s.date?.split('-')[0] || '';
-    const ss = (s.shape || '').toLowerCase();
-
-    const ok =
-      (src    === 'all' || s.source === src) &&
-      (shape  === 'all' || ss.includes(shape)) &&
-      (year   === 'all' || sy === year) &&
-      (status === 'all' || s.status === status) &&
-      (video  === 'all' || (video === 'yes' && s.videos?.length));
-
-    if (ok) { markerCluster.addLayer(m); visible++; }
+    if (visibleIds.has(s.id ?? s.uid)) { markerCluster.addLayer(m); visible++; }
   });
 
   document.getElementById('sighting-count').textContent = `${visible} sightings`;
@@ -448,34 +441,26 @@ function shareModal(title) {
 function handleSubmit(e) {
   e.preventDefault();
 
-  const title   = document.getElementById('sub-title').value.trim();
-  const city    = document.getElementById('sub-city').value.trim();
-  const state   = document.getElementById('sub-state').value.trim();
-  const country = document.getElementById('sub-country').value.trim();
-  const lat     = parseFloat(document.getElementById('sub-lat').value) || geoGuess(city);
-  const lng     = parseFloat(document.getElementById('sub-lng').value) || geoGuessLng(city);
-  const date    = document.getElementById('sub-date').value;
-  const desc    = document.getElementById('sub-desc').value.trim();
-  const shape   = document.getElementById('sub-shape').value;
-  const dur     = document.getElementById('sub-duration').value.trim();
-  const video   = document.getElementById('sub-video').value.trim();
-  const wit     = document.getElementById('sub-witnesses').value || '1';
-  const name    = document.getElementById('sub-name').value.trim() || 'Anonymous';
-  const anon    = document.getElementById('sub-anon').checked;
-  const src     = document.getElementById('sub-source').value.trim();
-
-  const location = [city, state, country].filter(Boolean).join(', ');
-  const videos = video ? video.split(',').map(v => v.trim()).filter(Boolean) : [];
-
-  const newSighting = {
-    uid: Date.now(), title, location, lat, lng, date,
-    source: 'civilian', status: 'pending',
-    description: desc, shape, duration: dur, videos,
-    witnesses: parseInt(wit),
-    gov_ref: src,
-    submittedBy: anon ? 'Anonymous' : name,
-    userSubmitted: true
-  };
+  const city = document.getElementById('sub-city').value;
+  const newSighting = buildSightingFromForm({
+    title:       document.getElementById('sub-title').value,
+    city,
+    state:       document.getElementById('sub-state').value,
+    country:     document.getElementById('sub-country').value,
+    lat:         document.getElementById('sub-lat').value,
+    lng:         document.getElementById('sub-lng').value,
+    date:        document.getElementById('sub-date').value,
+    description: document.getElementById('sub-desc').value,
+    shape:       document.getElementById('sub-shape').value,
+    duration:    document.getElementById('sub-duration').value,
+    video:       document.getElementById('sub-video').value,
+    witnesses:   document.getElementById('sub-witnesses').value,
+    name:        document.getElementById('sub-name').value,
+    anon:        document.getElementById('sub-anon').checked,
+    source:      document.getElementById('sub-source').value,
+    geoGuessLat: geoGuess(city),
+    geoGuessLng: geoGuessLng(city),
+  });
 
   userSightings.push(newSighting);
   saveUserSightings();
@@ -528,10 +513,8 @@ function toggleTimeline(cb) {
 
 // ── EXPORT ────────────────────────────────────────────────────
 function exportCSV() {
-  const all = [...SIGHTINGS, ...userSightings];
-  const cols = ['id','title','location','lat','lng','date','source','status','shape','duration','description','gov_ref'];
-  const rows = [cols.join(','), ...all.map(s => cols.map(c => JSON.stringify(s[c] ?? '')).join(','))];
-  download('phenomap-sightings.csv', rows.join('\n'), 'text/csv');
+  const csv = toCsv([...SIGHTINGS, ...userSightings]);
+  download('phenomap-sightings.csv', csv, 'text/csv');
 }
 
 function exportJSON() {
