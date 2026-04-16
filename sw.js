@@ -1,5 +1,5 @@
 // PhenoMap Service Worker — enables offline support and app install
-const CACHE_NAME = 'phenomap-v1';
+const CACHE_NAME = 'phenomap-v2';
 const ASSETS = [
   '/',
   '/index.html',
@@ -8,7 +8,10 @@ const ASSETS = [
   '/style.css',
   '/manifest.json',
   '/icon-192.svg',
-  '/icon-512.svg'
+  '/icon-512.svg',
+  '/icon-192.png',
+  '/icon-512.png',
+  '/apple-touch-icon.png'
 ];
 
 // Cache core assets on install
