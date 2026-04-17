@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#05070A" />
+<title>ZYROS — An Intelligence Layer Over The Internet</title>
+<meta name="description" content="ZYROS is an intelligence layer over the internet. Analyze, remember, and act on anything you see online." />
+<link rel="icon" type="image/svg+xml" href="zyros-icon.svg" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<!-- Ambient background -->
+<div class="bg-stars" id="bgStars" aria-hidden="true"></div>
+<div class="bg-glow bg-glow-center" aria-hidden="true"></div>
+<div class="bg-vignette" aria-hidden="true"></div>
+
+<!-- NAV -->
+<header class="nav">
+  <div class="nav-inner">
+    <a class="brand" href="#">
+      <svg class="brand-mark" viewBox="0 0 40 40" aria-hidden="true">
+        <defs>
+          <radialGradient id="navSphere" cx="50%" cy="45%" r="55%">
+            <stop offset="0%" stop-color="#EAFFFB"/>
+            <stop offset="40%" stop-color="#00F0D0"/>
+            <stop offset="100%" stop-color="#001E1A"/>
+          </radialGradient>
+        </defs>
+        <circle cx="20" cy="20" r="11" fill="url(#navSphere)"/>
+        <circle cx="20" cy="20" r="15" fill="none" stroke="#00F0D0" stroke-width="0.8" opacity="0.8"/>
+        <ellipse cx="20" cy="20" rx="18" ry="6" fill="none" stroke="#00F0D0" stroke-width="0.6" opacity="0.5" transform="rotate(-20 20 20)"/>
+      </svg>
+      <span class="brand-name">ZYROS</span>
+    </a>
+    <nav class="nav-links">
+      <a href="#terminal">Terminal</a>
+      <a href="#capabilities">Capabilities</a>
+      <a href="#identity">Identity</a>
+    </nav>
+    <a href="#access" class="nav-cta">Get Early Access</a>
+  </div>
+</header>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="status-pill" aria-hidden="true">
+    <span class="status-dot"></span>
+    <span>SYSTEM ONLINE · v0.9 BETA</span>
+  </div>
+
+  <!-- Core logo (sphere + orbit) -->
+  <div class="core-stage" id="coreStage">
+    <div class="core-halo" aria-hidden="true"></div>
+    <div class="core-ring ring-1" aria-hidden="true"></div>
+    <div class="core-ring ring-2" aria-hidden="true"></div>
+    <div class="core-ring ring-3" aria-hidden="true"></div>
+
+    <div class="core-sphere">
+      <svg viewBox="0 0 400 400" class="core-svg" aria-hidden="true">
+        <defs>
+          <radialGradient id="sphereGrad" cx="50%" cy="50%" r="55%">
+            <stop offset="0%"  stop-color="#F4FFFD" stop-opacity="1"/>
+            <stop offset="18%" stop-color="#9BFFEE" stop-opacity="0.95"/>
+            <stop offset="45%" stop-color="#00F0D0" stop-opacity="0.55"/>
+            <stop offset="78%" stop-color="#034A42" stop-opacity="0.55"/>
+            <stop offset="100%" stop-color="#000A09" stop-opacity="0.95"/>
+          </radialGradient>
+          <radialGradient id="sphereCoreHot" cx="50%" cy="50%" r="18%">
+            <stop offset="0%"  stop-color="#ffffff" stop-opacity="1"/>
+            <stop offset="60%" stop-color="#9BFFEE" stop-opacity="0.8"/>
+            <stop offset="100%" stop-color="#00F0D0" stop-opacity="0"/>
+          </radialGradient>
+          <radialGradient id="sphereHalo" cx="50%" cy="50%" r="50%">
+            <stop offset="55%" stop-color="#00F0D0" stop-opacity="0"/>
+            <stop offset="80%" stop-color="#00F0D0" stop-opacity="0.35"/>
+            <stop offset="100%" stop-color="#00F0D0" stop-opacity="0"/>
+          </radialGradient>
+          <linearGradient id="rimGrad" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#9BFFEE"/>
+            <stop offset="100%" stop-color="#00A99A"/>
+          </linearGradient>
+        </defs>
+
+        <!-- halo -->
+        <circle cx="200" cy="200" r="198" fill="url(#sphereHalo)"/>
+
+        <!-- sphere body -->
+        <circle cx="200" cy="200" r="148" fill="url(#sphereGrad)" stroke="url(#rimGrad)" stroke-width="1.2" stroke-opacity="0.9"/>
+
+        <!-- neural network -->
+        <g class="neural" stroke="#9BFFEE" stroke-width="0.7" fill="none" opacity="0.65">
+          <ellipse cx="200" cy="200" rx="148" ry="48"/>
+          <ellipse cx="200" cy="200" rx="148" ry="92"/>
+          <ellipse cx="200" cy="200" rx="48" ry="148"/>
+          <ellipse cx="200" cy="200" rx="92" ry="148"/>
+          <path d="M70 200 Q200 70 330 200"/>
+          <path d="M70 200 Q200 330 330 200"/>
+          <path d="M110 110 Q200 200 290 290"/>
+          <path d="M290 110 Q200 200 110 290"/>
+          <path d="M80 160 Q200 220 320 160"/>
+          <path d="M80 240 Q200 180 320 240"/>
+        </g>
+
+        <!-- nodes -->
+        <g class="nodes" fill="#DFFFF8">
+          <circle cx="70"  cy="200" r="2.6"/>
+          <circle cx="330" cy="200" r="2.6"/>
+          <circle cx="200" cy="52"  r="2.6"/>
+          <circle cx="200" cy="348" r="2.6"/>
+          <circle cx="110" cy="110" r="1.9"/>
+          <circle cx="290" cy="110" r="1.9"/>
+          <circle cx="110" cy="290" r="1.9"/>
+          <circle cx="290" cy="290" r="1.9"/>
+          <circle cx="160" cy="160" r="1.5"/>
+          <circle cx="240" cy="160" r="1.5"/>
+          <circle cx="160" cy="240" r="1.5"/>
+          <circle cx="240" cy="240" r="1.5"/>
+        </g>
+
+        <!-- hot core -->
+        <circle cx="200" cy="200" r="72" fill="url(#sphereCoreHot)"/>
+        <circle cx="200" cy="200" r="5" fill="#ffffff"/>
+      </svg>
+    </div>
+
+    <span class="orbit-dot dot-1" aria-hidden="true"></span>
+    <span class="orbit-dot dot-2" aria-hidden="true"></span>
+    <span class="orbit-dot dot-3" aria-hidden="true"></span>
+  </div>
+
+  <!-- Wordmark -->
+  <h1 class="wordmark">ZYROS</h1>
+  <p class="tagline">An Intelligence Layer Over The Internet</p>
+
+  <!-- Product card (glass) -->
+  <div class="product-card">
+    <div class="pc-glow" aria-hidden="true"></div>
+
+    <div class="pc-left">
+      <div class="pc-brand">
+        <svg class="brand-mark" viewBox="0 0 40 40" aria-hidden="true">
+          <circle cx="20" cy="20" r="11" fill="url(#navSphere)"/>
+          <circle cx="20" cy="20" r="15" fill="none" stroke="#00F0D0" stroke-width="0.8" opacity="0.8"/>
+        </svg>
+        <span>ZYROS</span>
+      </div>
+
+      <h2 class="pc-headline">
+        An Intelligence Layer<br/>Over The Internet
+      </h2>
+      <p class="pc-sub">
+        Analyze, remember, and act on<br/>anything you see online.
+      </p>
+
+      <form id="accessForm" class="access-form" autocomplete="off" novalidate>
+        <div class="access-field">
+          <svg viewBox="0 0 24 24" class="field-icon" aria-hidden="true">
+            <path d="M4 6h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1Zm.8 2 7.2 5.1L19.2 8H4.8Z" fill="currentColor"/>
+          </svg>
+          <input id="accessEmail" type="email" inputmode="email" placeholder="Enter your email" required aria-label="Email address"/>
+        </div>
+        <button id="accessSubmit" type="submit" class="btn-primary btn-pill">
+          <span>Get Early Access</span>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <p class="access-meta" id="accessMeta">Launching soon — limited early access</p>
+      </form>
+    </div>
+
+    <div class="pc-right" aria-hidden="true">
+      <div class="laptop">
+        <div class="laptop-screen">
+          <div class="ls-topbar">
+            <span></span><span></span><span></span>
+            <span class="ls-url">zyros.ai/core</span>
+          </div>
+          <div class="ls-body">
+            <aside class="ls-side">
+              <div class="ls-row"></div>
+              <div class="ls-row"></div>
+              <div class="ls-row short"></div>
+              <div class="ls-row"></div>
+              <div class="ls-row short"></div>
+              <div class="ls-row"></div>
+            </aside>
+            <div class="ls-main">
+              <div class="ls-core">
+                <svg viewBox="0 0 400 400">
+                  <circle cx="200" cy="200" r="198" fill="url(#sphereHalo)"/>
+                  <circle cx="200" cy="200" r="148" fill="url(#sphereGrad)" stroke="#00F0D0" stroke-opacity="0.8" stroke-width="1"/>
+                  <g stroke="#9BFFEE" stroke-width="0.6" fill="none" opacity="0.65">
+                    <ellipse cx="200" cy="200" rx="148" ry="48"/>
+                    <ellipse cx="200" cy="200" rx="148" ry="92"/>
+                    <ellipse cx="200" cy="200" rx="48" ry="148"/>
+                    <path d="M70 200 Q200 70 330 200"/>
+                    <path d="M70 200 Q200 330 330 200"/>
+                  </g>
+                  <circle cx="200" cy="200" r="60" fill="url(#sphereCoreHot)"/>
+                  <circle cx="200" cy="200" r="4" fill="#fff"/>
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="laptop-base"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CAPABILITIES STRIP -->
+<section class="caps" id="capabilities">
+  <div class="caps-inner">
+    <div class="caps-head">
+      <span class="eyebrow">// CAPABILITIES</span>
+      <h3>Built for signal, not noise.</h3>
+    </div>
+    <div class="caps-grid">
+      <article class="caps-card">
+        <div class="caps-icon">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h4l3-8 4 16 3-8h4" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <h4>Process</h4>
+        <p>Ingest any page, doc, or thread. Zyros compresses it into meaning.</p>
+      </article>
+      <article class="caps-card">
+        <div class="caps-icon">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6" fill="none"/><path d="M12 3v18M3 12h18" stroke="currentColor" stroke-width="1.2" fill="none" opacity=".6"/></svg>
+        </div>
+        <h4>Query</h4>
+        <p>Ask natural questions. Get answers grounded in what you've indexed.</p>
+      </article>
+      <article class="caps-card">
+        <div class="caps-icon">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3" stroke="currentColor" stroke-width="1.6" fill="none"/><path d="M8 10h8M8 14h5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        </div>
+        <h4>Memory</h4>
+        <p>A persistent index of everything you've seen. Searchable, forever.</p>
+      </article>
+      <article class="caps-card">
+        <div class="caps-icon">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l8 4v6c0 5-3.5 7.5-8 8-4.5-.5-8-3-8-8V7l8-4Z" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linejoin="round"/></svg>
+        </div>
+        <h4>Act</h4>
+        <p>Trigger workflows from insights. Your browser becomes an operator.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- TERMINAL / INTERACTIVE DEMO -->
+<section class="terminal" id="terminal">
+  <div class="terminal-inner">
+    <div class="terminal-head">
+      <span class="eyebrow">// TERMINAL</span>
+      <h3>Awaiting manual override command</h3>
+      <p class="terminal-sub">Paste any text. Process it. Query it. Index it to memory.</p>
+    </div>
+
+    <div class="term-grid">
+      <div class="panel panel-input">
+        <div class="panel-head">
+          <div class="panel-dots" aria-hidden="true"><span></span><span></span><span></span></div>
+          <span class="panel-label">INPUT_STREAM</span>
+          <span class="panel-status" id="inputStatus">READY</span>
+        </div>
+        <div class="panel-body">
+          <textarea id="inputStream" spellcheck="false" placeholder="// paste or type any text here — articles, notes, transcripts, code..."></textarea>
+          <div class="term-meters">
+            <div class="meter"><span class="meter-label">TOKENS</span><span class="meter-val" id="meterTokens">0</span></div>
+            <div class="meter"><span class="meter-label">ENTROPY</span><span class="meter-val" id="meterEntropy">0.00</span></div>
+            <div class="meter"><span class="meter-label">LANG</span><span class="meter-val" id="meterLang">—</span></div>
+          </div>
+          <div class="term-actions">
+            <button class="btn-term" data-cmd="summarize" type="button">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h10M4 18h16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+              <span>SUMMARIZE</span>
+            </button>
+            <button class="btn-term" data-cmd="query" type="button">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6" stroke="currentColor" stroke-width="1.6" fill="none"/><path d="m16 16 4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+              <span>QUERY</span>
+            </button>
+            <button class="btn-term" data-cmd="store" type="button">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="14" rx="2" stroke="currentColor" stroke-width="1.6" fill="none"/><path d="M4 10h16" stroke="currentColor" stroke-width="1.6"/></svg>
+              <span>STORE</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel panel-output">
+        <div class="panel-head">
+          <div class="panel-dots" aria-hidden="true"><span></span><span></span><span></span></div>
+          <span class="panel-label">OUTPUT_LOG</span>
+          <span class="panel-status" id="outputStatus">IDLE</span>
+        </div>
+        <div class="panel-body">
+          <div class="output-log" id="outputLog" role="log" aria-live="polite">
+            <div class="log-line log-sys"><span class="log-ts">00:00:00</span><span class="log-tag">[SYS]</span><span class="log-msg">Zyros core initialized. Awaiting input.</span></div>
+          </div>
+          <div class="output-foot">
+            <span class="footer-dot"></span>
+            <span id="outputFoot">Connection stable · latency 12ms</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- IDENTITY / LOGO SHOWCASE -->
+<section class="identity" id="identity">
+  <div class="identity-inner">
+    <div class="caps-head">
+      <span class="eyebrow">// IDENTITY SYSTEM</span>
+      <h3>One mark. Infinite states.</h3>
+    </div>
+    <div class="identity-grid">
+      <div class="id-card">
+        <div class="id-preview">
+          <svg viewBox="0 0 200 200" class="id-svg" aria-hidden="true">
+            <circle cx="100" cy="100" r="95" fill="url(#sphereHalo)"/>
+            <circle cx="100" cy="100" r="70" fill="url(#sphereGrad)" stroke="#00F0D0" stroke-opacity="0.7" stroke-width="0.8"/>
+            <g stroke="#9BFFEE" stroke-width="0.5" fill="none" opacity="0.65">
+              <ellipse cx="100" cy="100" rx="70" ry="22"/>
+              <ellipse cx="100" cy="100" rx="70" ry="44"/>
+              <ellipse cx="100" cy="100" rx="22" ry="70"/>
+              <path d="M30 100 Q100 30 170 100"/>
+              <path d="M30 100 Q100 170 170 100"/>
+            </g>
+            <circle cx="100" cy="100" r="28" fill="url(#sphereCoreHot)"/>
+            <circle cx="100" cy="100" r="2.5" fill="#fff"/>
+            <ellipse cx="100" cy="100" rx="92" ry="18" fill="none" stroke="#00F0D0" stroke-opacity="0.55" stroke-width="0.8" transform="rotate(-20 100 100)"/>
+          </svg>
+        </div>
+        <span class="id-label">Logo · Animated + Modern</span>
+      </div>
+      <div class="id-card">
+        <div class="id-preview">
+          <svg viewBox="0 0 200 200" class="id-svg" aria-hidden="true">
+            <circle cx="100" cy="100" r="95" fill="url(#sphereHalo)"/>
+            <circle cx="100" cy="100" r="70" fill="url(#sphereGrad)" stroke="#00F0D0" stroke-opacity="0.7" stroke-width="0.8"/>
+            <g stroke="#9BFFEE" stroke-width="0.5" fill="none" opacity="0.55">
+              <ellipse cx="100" cy="100" rx="70" ry="22"/>
+              <ellipse cx="100" cy="100" rx="22" ry="70"/>
+            </g>
+            <circle cx="100" cy="100" r="26" fill="url(#sphereCoreHot)"/>
+            <circle cx="100" cy="100" r="2.5" fill="#fff"/>
+          </svg>
+        </div>
+        <span class="id-label">Icon · App Mark</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- EARLY ACCESS CTA -->
+<section class="access-cta" id="access">
+  <div class="access-cta-inner panel">
+    <div class="panel-head">
+      <div class="panel-dots" aria-hidden="true"><span></span><span></span><span></span></div>
+      <span class="panel-label">EARLY_ACCESS.PROTOCOL</span>
+      <span class="panel-status">OPEN</span>
+    </div>
+    <div class="access-cta-body">
+      <span class="eyebrow">// JOIN THE WAITLIST</span>
+      <h3>Operate the web like a system.</h3>
+      <p>The first thousand operators shape what Zyros becomes. Claim a slot before it closes.</p>
+
+      <form id="accessForm2" class="access-form access-form-lg" autocomplete="off" novalidate>
+        <div class="access-field">
+          <svg viewBox="0 0 24 24" class="field-icon" aria-hidden="true">
+            <path d="M4 6h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1Zm.8 2 7.2 5.1L19.2 8H4.8Z" fill="currentColor"/>
+          </svg>
+          <input id="accessEmail2" type="email" inputmode="email" placeholder="Enter your email" required aria-label="Email address"/>
+        </div>
+        <button type="submit" class="btn-primary btn-pill">
+          <span>Get Early Access</span>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <p class="access-meta" id="accessMeta2">Launching soon — limited early access</p>
+      </form>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <svg viewBox="0 0 40 40" class="brand-mark" aria-hidden="true">
+        <circle cx="20" cy="20" r="11" fill="url(#navSphere)"/>
+        <circle cx="20" cy="20" r="15" fill="none" stroke="#00F0D0" stroke-width="0.8" opacity="0.8"/>
+      </svg>
+      <span>ZYROS</span>
+    </div>
+    <span class="footer-meta">© 2026 Zyros Systems · All signals reserved</span>
+  </div>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>
