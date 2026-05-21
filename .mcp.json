@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "zendrop": {
+      "type": "http",
+      "url": "https://app.zendrop.com/mcp/v1"
+    }
+  }
+}
