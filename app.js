@@ -321,7 +321,7 @@ function renderAnalytics() {
   // Verification donut
   const verified = all.filter(s => s.status === 'verified').length;
   const pending = all.length - verified;
-  const pct = Math.round(verified / all.length * 100);
+  const pct = all.length ? Math.round(verified / all.length * 100) : 0;
   const donut = document.getElementById('chart-verify');
   if (donut) {
     donut.innerHTML = `
@@ -622,7 +622,7 @@ function populateYearFilter() {
 
 function escHtml(str) {
   return String(str ?? '')
-    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 
 function formatDate(d) {
